@@ -175,7 +175,8 @@ void myDisplay() {
     GLdouble r = 0.5;
     GLint slices = 20;
     GLint stacks = 20;
-    glutSolidSphere(r, slices, stacks);
+    //glutSolidSphere(r, slices, stacks);
+    glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
 
     glFlush();
     glutSwapBuffers();
