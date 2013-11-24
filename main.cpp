@@ -152,12 +152,30 @@ void myDisplay() {
               0.0, 0.0,  0.0, // lookat
               0.0, 1.0,  0.0); // up
 
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, white);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, white);
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+
     glRotatef(cam_rotate_x, 1.0, 0.0, 0.0);
     glRotatef(cam_rotate_y, 0.0, 1.0, 0.0);
     glRotatef(cam_rotate_z, 0.0, 0.0, 1.0);
     glTranslatef(cam_translate_x,
                  cam_translate_z,
                  cam_translate_y);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+
+    GLdouble r = 0.5;
+    GLint slices = 20;
+    GLint stacks = 20;
+    glutSolidSphere(r, slices, stacks);
 
     glFlush();
     glutSwapBuffers();
