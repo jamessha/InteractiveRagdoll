@@ -49,18 +49,21 @@ inline float sqr(float x) { return x*x; }
 
 using namespace std;
 
+class Viewport {
+	public:
+		int w, h;
+};
+
 // Global vars
 Viewport viewport;
 int windowID;
 
-vector<double> rotate_x;
-vector<double> rotate_y;
-vector<double> rotate_z;
-vector<double> translate_x;
-vector<double> translate_y;
-vector<double> translate_z;
-vector<double> scale;
-vector<double> scale_factor;
+double cam_rotate_x;
+double cam_rotate_y;
+double cam_rotate_z;
+double cam_translate_x;
+double cam_translate_y;
+double cam_translate_z;
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -93,57 +96,7 @@ void myKeys(unsigned char key, int x, int y) {
 		break;
 	case SPACEBAR: 
 		break;
-    case EQUALS_KEY:
-        if (active <= num_obj){
-            if (scale[active-1] >= 10*scale_factor[active-1] - 0.001)
-                scale_factor[active-1] *= 10;
-            scale[active-1] += scale_factor[active-1];
-        } 
-		break;
-	case MINUS_KEY:
-        if (active <= num_obj){
-            if (scale[active-1] <= scale_factor[active-1] + 0.001)
-                scale_factor[active-1] /= 10.0;
-            scale[active-1] -= scale_factor[active-1];
-        }
-		break;
-	case W_KEY:
-		wireframe = !wireframe;
-		break;
-	case S_KEY:
-		flat = !flat;
-		break;
-    case N_KEY:
-        show_normals = !show_normals;
-        break;
-    case ONE_KEY:
-        active = 1;
-        break;
-    case TWO_KEY:
-        active = 2;
-        break;
-    case THREE_KEY:
-        active = 3;
-        break;
-    case FOUR_KEY:
-        active = 4;
-        break;
-    case FIVE_KEY:
-        active = 5;
-        break;
-    case SIX_KEY:
-        active = 6;
-        break;
-    case SEVEN_KEY:
-        active = 7;
-        break;
-    case EIGHT_KEY:
-        active = 8;
-        break;
-    case NINE_KEY:
-        active = 9;
-        break;
-	}
+    }
 	glutPostRedisplay();
 }
 
@@ -152,30 +105,22 @@ void mySpecial(int key, int x, int y) {
 	int modifier = glutGetModifiers();
 	switch(key) {
 	case GLUT_KEY_RIGHT:
-        if (active <= num_obj){
-            if (modifier == GLUT_ACTIVE_SHIFT) translate_x[active-1] -= 0.1;
-            else if (modifier == GLUT_ACTIVE_CTRL) rotate_x[active-1] += 5;
-            else rotate_y[active-1] += 5;
-        }
+        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x -= 0.1;
+        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x += 5;
+        else cam_rotate_y += 5;
 		break;
 	case GLUT_KEY_LEFT:
-        if (active <= num_obj){
-            if (modifier == GLUT_ACTIVE_SHIFT) translate_x[active-1] += 0.1;
-            else if (modifier == GLUT_ACTIVE_CTRL) rotate_x[active-1] -= 5;
-            else rotate_y[active-1] -= 5;
-        } 
+        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x += 0.1;
+        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x -= 5;
+        else cam_rotate_y -= 5;
 		break;
 	case GLUT_KEY_UP:
-        if (active <= num_obj){
-            if (modifier == GLUT_ACTIVE_SHIFT) translate_y[active-1] -= 0.1;
-            else rotate_z[active-1] += 5;
-        }
+        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y -= 0.1;
+        else cam_rotate_z += 5;
 		break;
 	case GLUT_KEY_DOWN:
-        if (active <= num_obj){
-            if (modifier == GLUT_ACTIVE_SHIFT) translate_y[active-1] += 0.1;
-            else rotate_z[active-1] -= 5;
-        }
+        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y += 0.1;
+        else cam_rotate_z -= 5;
 		break;
 	}
 	glutPostRedisplay();
@@ -198,6 +143,21 @@ void myReshape(int w, int h) {
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glLoadIdentity();              				         // reset transformations
+
+    glLoadIdentity();
+    gluPerspective(50.0, 1.0, 1.0, 20.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(0.0, 0.0, 10.0, // lookfrom
+              0.0, 0.0,  0.0, // lookat
+              0.0, 1.0,  0.0); // up
+
+    glRotatef(cam_rotate_x, 1.0, 0.0, 0.0);
+    glRotatef(cam_rotate_y, 0.0, 1.0, 0.0);
+    glRotatef(cam_rotate_z, 0.0, 0.0, 1.0);
+    glTranslatef(cam_translate_x,
+                 cam_translate_z,
+                 cam_translate_y);
 
     glFlush();
     glutSwapBuffers();
