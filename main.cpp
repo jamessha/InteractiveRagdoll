@@ -25,6 +25,8 @@
 #include <map>
 #include <algorithm>
 
+#include "objects.h"
+
 #define SPACEBAR 32
 #define ESCAPE 27
 #define S_KEY 115
@@ -64,6 +66,8 @@ double cam_rotate_z;
 double cam_translate_x;
 double cam_translate_y;
 double cam_translate_z;
+
+Buddy buddy;
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -164,19 +168,53 @@ void myDisplay() {
     glRotatef(cam_rotate_y, 0.0, 1.0, 0.0);
     glRotatef(cam_rotate_z, 0.0, 0.0, 1.0);
     glTranslatef(cam_translate_x,
-                 cam_translate_z,
-                 cam_translate_y);
+                 cam_translate_y,
+                 cam_translate_z);
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
-    GLdouble r = 0.5;
+    GLdouble r = 0.1;
     GLint slices = 20;
     GLint stacks = 20;
-    //glutSolidSphere(r, slices, stacks);
-    glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
+
+    vector<Joint> joints;
+    buddy.get_joints(joints);
+    for (int i = 0; i < joints.size(); i++){
+        Eigen::Vector3d p = joints[i].pos;
+        glTranslatef(p(0), p(1), p(2));
+        glutSolidSphere(r, slices, stacks);
+        glTranslatef(-p(0), -p(1), -p(2));
+    } 
+
+    vector<Joint*> body_vertices;
+    buddy.get_body(body_vertices);
+    for (int i = 0; i < body_vertices.size(); i++){
+        Joint* face = body_vertices[i];
+        glBegin(GL_POLYGON);
+        Eigen::Vector3d n;
+        n = (face[1].pos - face[0].pos).cross(face[2].pos - face[0].pos);
+        for (int j = 0; j < 3; j++){
+            glNormal3f(n[0], n[1], n[2]);
+            glVertex3f(face[j].pos[0], face[j].pos[1], face[j].pos[2]);
+        } 
+        glEnd();
+    } 
+
+    vector<Joint*> limbs;
+    buddy.get_limbs(limbs);
+    for (int i = 0; i < limbs.size(); i++){
+        Joint* limb = limbs[i];
+        glLineWidth(2.5); 
+        glBegin(GL_LINES);
+        glVertex3f(limb[0].pos[0], limb[0].pos[1], limb[0].pos[2]);
+        glVertex3f(limb[1].pos[0], limb[1].pos[1], limb[1].pos[2]);
+        glEnd();
+    } 
+
+    //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
 
     glFlush();
     glutSwapBuffers();
