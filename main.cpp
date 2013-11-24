@@ -64,6 +64,7 @@ double cam_rotate_z;
 double cam_translate_x;
 double cam_translate_y;
 double cam_translate_z;
+bool perspective;
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -81,6 +82,7 @@ GLfloat shininess[] = {8.0};
 void initializeVars() {
     viewport.w = 800;
     viewport.h = 800;
+    perspective = true;  //on default, perspective is turned on. This is just for testing out purposes later.
 }
 
 // function that handles keyboard events
@@ -132,9 +134,13 @@ void myReshape(int w, int h) {
   viewport.h = h;
 
   glViewport (0,0,viewport.w,viewport.h);
-  glMatrixMode(GL_PROJECTION);
+  glMatrixMode(GL_PROJECTION);   //more info: http://cl.ly/2g3G472a2p1a
   glLoadIdentity();
-  gluOrtho2D(0, viewport.w, 0, viewport.h);
+
+  //choose perspective or orthographic based on global variables --> (perspective: http://cl.ly/1a3t1P2t1w0K), (ortho: http://cl.ly/2i2E3Q3j3s1c)
+  if(!perspective) gluOrtho2D(0, viewport.w, 0, viewport.h);
+  else gluPerspective((double)65.0, (double)viewport.w/(double)viewport.h, 1, 100);
+
 } 
 
  
@@ -177,7 +183,7 @@ void myDisplay() {
     GLint stacks = 20;
     //glutSolidSphere(r, slices, stacks);
     glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
-
+    glLoadIdentity();
     glFlush();
     glutSwapBuffers();
 }
