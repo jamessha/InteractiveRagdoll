@@ -203,14 +203,14 @@ void myDisplay() {
         glEnd();
     } 
 
-    vector<Joint*> limbs;
+    vector<Limb> limbs;
     buddy.get_limbs(limbs);
     for (int i = 0; i < limbs.size(); i++){
-        Joint* limb = limbs[i];
+        Limb limb = limbs[i];
         glLineWidth(2.5); 
         glBegin(GL_LINES);
-        glVertex3f(limb[0].pos[0], limb[0].pos[1], limb[0].pos[2]);
-        glVertex3f(limb[1].pos[0], limb[1].pos[1], limb[1].pos[2]);
+        glVertex3f(limb.joint_1.pos[0], limb.joint_1.pos[1], limb.joint_1.pos[2]);
+        glVertex3f(limb.joint_2.pos[0], limb.joint_2.pos[1], limb.joint_2.pos[2]);
         glEnd();
     } 
 

@@ -23,6 +23,20 @@ class Joint{
 		Eigen::Vector3d tvec;
 };
 
+class Limb{
+	public:
+		Limb(){
+		} 
+
+		Limb(Joint& one, Joint& two){
+			this->joint_1 = one;
+			this->joint_2 = two;
+		} 
+
+		Joint joint_1;
+		Joint joint_2;
+};
+
 class Buddy{
 	public:
 		Buddy(){
@@ -39,6 +53,29 @@ class Buddy{
 			this->r_knee.pos << 0.5, 0.5, 0;
 			this->l_ankle.pos << -0.5, 0, 0;
 			this->r_ankle.pos << 0.5, 0, 0;
+			
+			this->neck.joint_1 = head;
+			this->neck.joint_2 = spine;
+
+			this->l_humerus.joint_1 = l_shoulder;
+			this->l_humerus.joint_2 = l_elbow;
+			this->r_humerus.joint_1 = r_shoulder;
+			this->r_humerus.joint_2 = r_elbow;
+
+			this->l_ulna.joint_1 = l_elbow;
+			this->l_ulna.joint_2 = l_wrist;
+			this->r_ulna.joint_1 = r_elbow;
+			this->r_ulna.joint_2 = r_wrist;
+
+			this->l_femur.joint_1 = pelvis;
+			this->l_femur.joint_2 = l_knee;
+			this->r_femur.joint_1 = pelvis;
+			this->r_femur.joint_2 = r_knee;
+
+			this->l_tibia.joint_1 = l_knee;
+			this->l_tibia.joint_2 = l_ankle;
+			this->r_tibia.joint_1 = r_knee;
+			this->r_tibia.joint_2 = r_ankle;
 		}
 
 		void get_joints(vector<Joint>& joints){
@@ -79,40 +116,7 @@ class Buddy{
 			body.push_back(r_back);
 		} 
 
-		void get_limbs(vector<Joint*>& limbs){
-			Joint* neck = new Joint[2];
-			Joint* l_humerus = new Joint[2];
-			Joint* r_humerus = new Joint[2];
-			Joint* l_ulna = new Joint[2];
-			Joint* r_ulna = new Joint[2];
-			Joint* l_femur = new Joint[2];
-			Joint* r_femur = new Joint[2];
-			Joint* l_tibia = new Joint[2];
-			Joint* r_tibia = new Joint[2];
-
-			neck[0] = head;
-			neck[1] = spine;
-
-			l_humerus[0] = l_shoulder;
-			l_humerus[1] = l_elbow;
-			r_humerus[0] = r_shoulder;
-			r_humerus[1] = r_elbow;
-
-			l_ulna[0] = l_elbow;
-			l_ulna[1] = l_wrist;
-			r_ulna[0] = r_elbow;
-			r_ulna[1] = r_wrist;
-
-			l_femur[0] = pelvis;
-			l_femur[1] = l_knee;
-			r_femur[0] = pelvis;
-			r_femur[1] = r_knee;
-
-			l_tibia[0] = l_knee;
-			l_tibia[1] = l_ankle;
-			r_tibia[0] = r_knee;
-			r_tibia[1] = r_ankle;
-
+		void get_limbs(vector<Limb>& limbs){
 			limbs.push_back(neck);
 			limbs.push_back(l_humerus);
 			limbs.push_back(r_humerus);
@@ -137,4 +141,18 @@ class Buddy{
 		Joint r_knee;
 		Joint l_ankle;
 		Joint r_ankle;
+
+		Limb neck;
+		Limb l_humerus;
+		Limb r_humerus;
+		Limb l_ulna;
+		Limb r_ulna;
+		Limb l_femur;
+		Limb r_femur;
+		Limb l_tibia;
+		Limb r_tibia;
+
+
+
+
 };
