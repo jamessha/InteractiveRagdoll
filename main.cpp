@@ -176,7 +176,7 @@ void myDisplay() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
-    GLdouble r = 0.1;
+    GLdouble r = 0.05;
     GLint slices = 20;
     GLint stacks = 20;
 
@@ -190,7 +190,7 @@ void myDisplay() {
     } 
 
     vector<Joint*> body_vertices;
-    buddy.get_body(body_vertices);
+    buddy.body.get_faces(body_vertices);
     for (int i = 0; i < body_vertices.size(); i++){
         Joint* face = body_vertices[i];
         glBegin(GL_POLYGON);
@@ -207,7 +207,7 @@ void myDisplay() {
     buddy.get_limbs(limbs);
     for (int i = 0; i < limbs.size(); i++){
         Limb limb = limbs[i];
-        glLineWidth(2.5); 
+        glLineWidth(5); 
         glBegin(GL_LINES);
         glVertex3f(limb.joint_1.pos[0], limb.joint_1.pos[1], limb.joint_1.pos[2]);
         glVertex3f(limb.joint_2.pos[0], limb.joint_2.pos[1], limb.joint_2.pos[2]);

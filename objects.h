@@ -37,6 +37,45 @@ class Limb{
 		Joint joint_2;
 };
 
+class Body{
+	public:
+		Body(){
+		}
+
+		void get_faces(vector<Joint*>& faces){
+			Joint* front = new Joint[3];
+			Joint* l_back = new Joint[3];
+			Joint* r_back = new Joint[3];
+			Joint* top = new Joint[3];
+
+			front[0] = l_shoulder;
+			front[1] = r_shoulder;
+			front[2] = pelvis;
+
+			l_back[0] = spine;
+			l_back[1] = l_shoulder;
+			l_back[2] = pelvis;
+
+			r_back[0] = r_shoulder;
+			r_back[1] = spine;
+			r_back[2] = pelvis;
+
+			top[0] = l_shoulder;
+			top[1] = r_shoulder;
+			top[2] = spine;
+
+			faces.push_back(front);
+			faces.push_back(l_back);
+			faces.push_back(r_back);
+			faces.push_back(top);
+		} 
+
+		Joint spine;
+		Joint l_shoulder;
+		Joint r_shoulder;
+		Joint pelvis;
+};
+
 class Buddy{
 	public:
 		Buddy(){
@@ -76,6 +115,11 @@ class Buddy{
 			this->l_tibia.joint_2 = l_ankle;
 			this->r_tibia.joint_1 = r_knee;
 			this->r_tibia.joint_2 = r_ankle;
+
+			this->body.spine = spine;
+			this->body.l_shoulder = l_shoulder;
+			this->body.r_shoulder = r_shoulder;
+			this->body.pelvis = pelvis;
 		}
 
 		void get_joints(vector<Joint>& joints){
@@ -92,28 +136,6 @@ class Buddy{
 			joints.push_back(r_knee);
 			joints.push_back(l_ankle);
 			joints.push_back(r_ankle);
-		} 
-
-		void get_body(vector<Joint*>& body){
-			Joint* front = new Joint[3];
-			Joint* l_back = new Joint[3];
-			Joint* r_back = new Joint[3];
-
-			front[0] = l_shoulder;
-			front[1] = r_shoulder;
-			front[2] = pelvis;
-
-			l_back[0] = spine;
-			l_back[1] = l_shoulder;
-			l_back[2] = pelvis;
-
-			r_back[0] = r_shoulder;
-			r_back[1] = spine;
-			r_back[2] = pelvis;
-
-			body.push_back(front);
-			body.push_back(l_back);
-			body.push_back(r_back);
 		} 
 
 		void get_limbs(vector<Limb>& limbs){
@@ -152,7 +174,5 @@ class Buddy{
 		Limb l_tibia;
 		Limb r_tibia;
 
-
-
-
+		Body body;
 };
