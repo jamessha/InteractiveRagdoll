@@ -1,6 +1,6 @@
 CC = g++
 ifeq ($(shell sw_vers 2>/dev/null | grep Mac | awk '{ print $$2}'),Mac)
-	CFLAGS = -g -I./include/ -I/usr/X11/include -I/usr/local/include -I/usr/local/include/eigen3 -DOSX
+	CFLAGS = -g -I./include/ -I/usr/X11/include -I/usr/local/include -I/usr/local/include/eigen3 -DOSX -Wno-deprecated-declarations
 	LDFLAGS = -lm -lstdc++ -framework GLUT -framework OpenGL \
 	 	-L"/System/Library/Frameworks/OpenGL.framework/Libraries" \
 
