@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <vector>
+#include <string>
 
 using namespace std;
 
@@ -8,19 +9,28 @@ class Joint{
 	public:
 		Joint(){
 			this->pos << 0, 0, 0;
-			this->rvec << 0, 0, 0;
+			this->rvec << 0, 0, 90;
 			this->tvec << 0, 0, 0;
+			this->max_r << 0, 0, 0;
 		} 
 
-		Joint(double x, double y, double z){
+		void set_info(string name, double x, double y, double z,
+					  double max_rx, double max_ry, double max_rz){
+			this->name = name;
 			this->pos << x, y, z;
-			this->rvec << 0, 0, 0;
-			this->tvec << 0, 0, 0;
+			this->max_r << max_rx, max_ry, max_rz;
+		} 
+		
+		void add_link(Joint& j){
+			this->links.push_back(j);
 		} 
 
+		string name;
 		Eigen::Vector3d pos;
 		Eigen::Vector3d rvec;
 		Eigen::Vector3d tvec;
+		Eigen::Vector3d max_r;
+		vector<Joint> links;
 };
 
 class Limb{
@@ -79,20 +89,62 @@ class Body{
 class Buddy{
 	public:
 		Buddy(){
-			this->head.pos << 0, 2, 0;
-			this->spine.pos << 0, 1.8, 0.3;
-			this->pelvis.pos << 0, 1, 0;
-			this->l_shoulder.pos << -0.5, 1.8, 0;
-			this->r_shoulder.pos << 0.5, 1.8, 0;
-			this->l_elbow.pos << -0.6, 1.5, 0;
-			this->r_elbow.pos << 0.6, 1.5, 0;
-			this->l_wrist.pos << -0.6, 1.2, 0;
-			this->r_wrist.pos << 0.6, 1.2, 0;
-			this->l_knee.pos << -0.5, 0.5, 0;
-			this->r_knee.pos << 0.5, 0.5, 0;
-			this->l_ankle.pos << -0.5, 0, 0;
-			this->r_ankle.pos << 0.5, 0, 0;
+			// Init Joints
+			this->head.set_info("head", 0, 2, 0, 90, 90, 90);
+			this->spine.set_info("spine", 0, 1.8, 0.3, 0, 0, 0);
+			this->pelvis.set_info("pelvis", 0, 1, 0, 0, 0, 0);
+			this->l_shoulder.set_info("l_shoulder", -0.5, 1.8, 0, 0, 0, 0);
+			this->r_shoulder.set_info("r_shoulder", 0.5, 1.8, 0, 0, 0, 0);
+			this->l_elbow.set_info("l_elbow", -0.6, 1.5, 0, 90, 90, 90);
+			this->r_elbow.set_info("r_elbow", 0.6, 1.5, 0, 90, 90, 90);
+			this->l_wrist.set_info("l_wrist", -0.6, 1.2, 0, 0, 90, 90);
+			this->r_wrist.set_info("r_wrist", 0.6, 1.2, 0, 0, 90, 90);
+			this->l_knee.set_info("l_knee", -0.5, 0.5, 0, 90, 90, 90);
+			this->r_knee.set_info("r_knee", 0.5, 0.5, 0, 90, 90, 90);
+			this->l_ankle.set_info("l_ankle", -0.5, 0, 0, 90, 0, 90);
+			this->r_ankle.set_info("r_ankle", 0.5, 0, 0, 90, 0, 90);
 			
+			// Add links between joints
+			this->head.add_link(this->spine);
+
+			this->spine.add_link(this->head);
+			this->spine.add_link(this->l_shoulder);
+			this->spine.add_link(this->r_shoulder);
+			this->spine.add_link(this->pelvis);
+
+			this->pelvis.add_link(this->spine);
+			this->pelvis.add_link(this->l_shoulder);
+			this->pelvis.add_link(this->r_shoulder);
+			this->pelvis.add_link(this->l_knee);
+			this->pelvis.add_link(this->r_knee);
+
+			this->l_shoulder.add_link(this->spine);
+			this->l_shoulder.add_link(this->pelvis);
+			this->l_shoulder.add_link(this->r_shoulder);
+			this->l_shoulder.add_link(this->l_elbow);
+
+			this->r_shoulder.add_link(this->spine);
+			this->r_shoulder.add_link(this->pelvis);
+			this->r_shoulder.add_link(this->l_shoulder);
+			this->r_shoulder.add_link(this->r_elbow);
+
+			this->l_elbow.add_link(this->l_shoulder);
+			this->l_elbow.add_link(this->l_wrist);
+			this->r_elbow.add_link(this->r_shoulder);
+			this->r_elbow.add_link(this->r_wrist);
+			
+			this->l_wrist.add_link(this->l_elbow);
+			this->r_wrist.add_link(this->r_elbow);
+
+			this->l_knee.add_link(this->pelvis);
+			this->l_knee.add_link(this->l_ankle);
+			this->r_knee.add_link(this->pelvis);
+			this->r_knee.add_link(this->r_ankle);
+			
+			this->l_ankle.add_link(this->l_knee);
+			this->r_ankle.add_link(this->r_knee);
+			
+			// Add limbs for convenience
 			this->neck.joint_1 = head;
 			this->neck.joint_2 = spine;
 
@@ -115,7 +167,8 @@ class Buddy{
 			this->l_tibia.joint_2 = l_ankle;
 			this->r_tibia.joint_1 = r_knee;
 			this->r_tibia.joint_2 = r_ankle;
-
+			
+			// Add body
 			this->body.spine = spine;
 			this->body.l_shoulder = l_shoulder;
 			this->body.r_shoulder = r_shoulder;
