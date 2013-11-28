@@ -1,12 +1,16 @@
-//With inspiration from Thomas Jakobsen
+//With inspiration from Thomas Jakobsen and that Verlet website
 
+
+//Models particles. By Verlet, each particle stores it's old position and it's current position.
+//and extrapolates it's velocity from that. Also has acceleration if we need it.
+//constraints constrains the Particle (by links but right now it's just within a box defined by vectors)
 class Particle {
     public:
         Vector3d oldPos;
         Vector3d curPos;
         Vector3d acc;
     public:
-        void constraints (Vector3d ll, Vector3d up, Particle* particles) {
+        void constraints (Vector3d ll, Vector3d up) {
             double x = curPos[0];
             double y = curPos[1];
             double z = curPos[2];
@@ -44,14 +48,31 @@ class Particle {
         }
 };
 
-class Sphere : public Particle {
+
+//Composed of a radius and a particle (which is it's position and velocity and stuff)
+//For now, the constraint on a Sphere is to not go outside of the box.
+//It does this by delegating to the particle with a more (by radius) bounded area.
+class Sphere {
     public:
         double radius;
+        Particle part;
     public:
-        void constraints (Vector3d ll, Vector3d up, Particle* particles) {
+        void constraints (Vector3d ll, Vector3d up) {
+            double minx = ll[0];
+            double maxx = up[0];
+            double miny = ll[1];
+            double maxy = up[1];
+            double minz = ll[2];
+            double maxz = up[2];
+
+
+            part.constraints(Vector3d(minx+radius, miny+radius, minz+radius),
+             Vector3d(maxx-radius, maxy-radius, maxz-radius));
         }
 };
 
+
+//Class instantiated that allows for Verlet simulation of particles, allows to set the acceleration of particles,
 class ParticleSystem {
     public:
         int num_particles;
@@ -83,26 +104,24 @@ void ParticleSystem::Verlet () {
         VectorXd oldPos = part.oldPos;
         VectorXd acc = part.acc;
         part.curPos = 2 * curPos - oldPos + acc * dtimestep * dtimestep;
-        // cout << "TEST" << endl;
-        // cout << oldPos << endl;
-        // cout << temp << endl;
-        // cout << part.curPos << endl;
-        // cout << "endTest" << endl;
         part.oldPos = temp;
         particles[i] = part;
     }
 }
 
+
+//A timestep sets the acceleration, then does verlet simulation and applies constraints
 void ParticleSystem::TimeStep() {
     setAcc();
     Verlet();
     SatisfyConstraints();
 }
 
+//Applies constraints. For now simply applies the constraints of the particles.
 void ParticleSystem::SatisfyConstraints() {
     for (int i = 0; i < num_particles; i++) {
         Particle part = particles[i];
-        part.constraints(Vector3d(0,0,0), Vector3d(10,10,10), particles);
+        part.constraints(Vector3d(0,0,0), Vector3d(10,10,10));
         particles[i] = part;
     }
 }
