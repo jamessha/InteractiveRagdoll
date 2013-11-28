@@ -25,6 +25,8 @@
 #include <map>
 #include <algorithm>
 
+#include "objects.h"
+
 #define SPACEBAR 32
 #define ESCAPE 27
 #define S_KEY 115
@@ -65,6 +67,8 @@ double cam_translate_x;
 double cam_translate_y;
 double cam_translate_z;
 bool perspective;
+
+Buddy buddy;
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -170,20 +174,91 @@ void myDisplay() {
     glRotatef(cam_rotate_y, 0.0, 1.0, 0.0);
     glRotatef(cam_rotate_z, 0.0, 0.0, 1.0);
     glTranslatef(cam_translate_x,
-                 cam_translate_z,
-                 cam_translate_y);
+                 cam_translate_y,
+                 cam_translate_z);
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
-    GLdouble r = 0.5;
+    GLdouble r = 0.05;
     GLint slices = 20;
     GLint stacks = 20;
-    //glutSolidSphere(r, slices, stacks);
-    glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
-    glLoadIdentity();
+
+    vector<Joint> joints;
+    buddy.get_joints(joints);
+    for (int i = 0; i < joints.size(); i++){
+        Eigen::Vector3d p = joints[i].pos;
+        Eigen::Vector3d rvec = joints[i].rvec;
+        glRotatef(rvec(0), 1.0, 0.0, 0.0);
+        glRotatef(rvec(1), 0.0, 1.0, 0.0);
+        glRotatef(rvec(2), 0.0, 0.0, 1.0);
+        glTranslatef(p(0), p(1), p(2));
+
+        glutSolidSphere(r, slices, stacks);
+
+        glTranslatef(-p(0), -p(1), -p(2));
+        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
+        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
+        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
+    }
+
+    //vector<Joint*> body_vertices;
+    //buddy.body.get_faces(body_vertices);
+    //for (int i = 0; i < body_vertices.size(); i++){
+    //    Joint* face = body_vertices[i];
+    //    glBegin(GL_POLYGON);
+    //    Eigen::Vector3d n;
+    //    n = (face[1].pos - face[0].pos).cross(face[2].pos - face[0].pos);
+    //    for (int j = 0; j < 3; j++){
+    //        Eigen::Vector3d p = face[j].pos;
+    //        Eigen::Vector3d rvec = face[j].rvec;
+    //        glRotatef(rvec(0), 1.0, 0.0, 0.0);
+    //        glRotatef(rvec(1), 0.0, 1.0, 0.0);
+    //        glRotatef(rvec(2), 0.0, 0.0, 1.0);
+    //        glTranslatef(p(0), p(1), p(2));
+
+    //        glNormal3f(n[0], n[1], n[2]);
+    //        glVertex3f(face[j].pos[0], face[j].pos[1], face[j].pos[2]);
+
+    //        glTranslatef(-p(0), -p(1), -p(2));
+    //        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
+    //        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
+    //        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
+    //    }
+    //    glEnd();
+    //}
+
+    //vector<Limb> limbs;
+    //buddy.get_limbs(limbs);
+    //for (int i = 0; i < limbs.size(); i++){
+    //    Limb limb = limbs[i];
+    //    Joint end_pts[2];
+    //    end_pts[0] = limb.joint_1;
+    //    end_pts[1] = limb.joint_2;
+    //    glLineWidth(5);
+    //    glBegin(GL_LINES);
+    //    for (int j = 0; j < 2; j++){
+    //        Eigen::Vector3d p = end_pts[j].pos;
+    //        Eigen::Vector3d rvec = end_pts[j].rvec;
+    //        glRotatef(rvec(0), 1.0, 0.0, 0.0);
+    //        glRotatef(rvec(1), 0.0, 1.0, 0.0);
+    //        glRotatef(rvec(2), 0.0, 0.0, 1.0);
+    //        glTranslatef(p(0), p(1), p(2));
+
+    //        glVertex3f(end_pts[j].pos[0], end_pts[j].pos[1], end_pts[j].pos[2]);
+
+    //        glTranslatef(-p(0), -p(1), -p(2));
+    //        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
+    //        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
+    //        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
+    //    }
+    //    glEnd();
+    //} 
+
+    //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
+
     glFlush();
     glutSwapBuffers();
 }
