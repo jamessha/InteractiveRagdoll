@@ -69,7 +69,7 @@ double cam_translate_z;
 bool perspective;
 
 Buddy buddy;
-ParticleSystem ps(1, 0.001);
+ParticleSystem ps(0.001);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -233,12 +233,12 @@ void myDisplay() {
 
     //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
     
-    for (int i = 0; i < ps.num_particles; i++){
-        Particle p = ps.particles[i];
-        Eigen::Vector3d pos = p.curPos;
+    for (int i = 0; i < ps.SS.size(); i++){
+        Sphere s = ps.SS[i];
+        Eigen::Vector3d pos = s.curPos;
         glTranslatef(pos(0), pos(1), pos(2));
         //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
-        glutSolidSphere(r, slices, stacks);
+        glutSolidSphere(s.radius, slices, stacks);
         glTranslatef(-pos(0), -pos(1), -pos(2));
         cout << "particle position: " << pos.transpose() << endl;
     } 
@@ -251,6 +251,12 @@ void myDisplay() {
 
 int main(int argc, char *argv[]) {
     initializeVars();
+
+    Sphere s(0.1, -0.2, 0.05,
+             0.0, 0.0, 0.0,
+             0.0, -0.9, 0.0,
+             0.1);
+    ps.addSphere(s);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
