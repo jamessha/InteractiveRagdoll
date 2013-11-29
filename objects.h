@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+#include "particlesystem.cpp"
+
 using namespace std;
 
 class Joint{
