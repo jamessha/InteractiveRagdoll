@@ -6,11 +6,17 @@
 //constraints constrains the Particle (by links but right now it's just within a box defined by vectors)
 class Particle {
     public:
-        Vector3d oldPos;
-        Vector3d curPos;
-        Vector3d acc;
+        Eigen::Vector3d oldPos;
+        Eigen::Vector3d curPos;
+        Eigen::Vector3d acc;
     public:
-        void constraints (Vector3d ll, Vector3d up) {
+        // TODO: This is for testing
+        Particle(){
+            oldPos << -0.05, 0.15, -0.1;
+            curPos << 0, 0, 0;
+            acc << 0.02, 0.05, 0.01;
+        } 
+        void constraints (Eigen::Vector3d ll, Eigen::Vector3d up) {
             double x = curPos[0];
             double y = curPos[1];
             double z = curPos[2];
@@ -57,7 +63,7 @@ class Sphere {
         double radius;
         Particle part;
     public:
-        void constraints (Vector3d ll, Vector3d up) {
+        void constraints (Eigen::Vector3d ll, Eigen::Vector3d up) {
             double minx = ll[0];
             double maxx = up[0];
             double miny = ll[1];
@@ -66,8 +72,8 @@ class Sphere {
             double maxz = up[2];
 
 
-            part.constraints(Vector3d(minx+radius, miny+radius, minz+radius),
-             Vector3d(maxx-radius, maxy-radius, maxz-radius));
+            part.constraints(Eigen::Vector3d(minx+radius, miny+radius, minz+radius),
+             Eigen::Vector3d(maxx-radius, maxy-radius, maxz-radius));
         }
 };
 
@@ -99,16 +105,15 @@ void ParticleSystem::setAcc() {
 void ParticleSystem::Verlet () {
     for (int i = 0; i < num_particles; i++) {
         Particle part = particles[i];
-        VectorXd curPos = part.curPos;
-        VectorXd temp = curPos;
-        VectorXd oldPos = part.oldPos;
-        VectorXd acc = part.acc;
+        Eigen::VectorXd curPos = part.curPos;
+        Eigen::VectorXd temp = curPos;
+        Eigen::VectorXd oldPos = part.oldPos;
+        Eigen::VectorXd acc = part.acc;
         part.curPos = 2 * curPos - oldPos + acc * dtimestep * dtimestep;
         part.oldPos = temp;
         particles[i] = part;
     }
 }
-
 
 //A timestep sets the acceleration, then does verlet simulation and applies constraints
 void ParticleSystem::TimeStep() {
@@ -121,7 +126,7 @@ void ParticleSystem::TimeStep() {
 void ParticleSystem::SatisfyConstraints() {
     for (int i = 0; i < num_particles; i++) {
         Particle part = particles[i];
-        part.constraints(Vector3d(0,0,0), Vector3d(10,10,10));
+        part.constraints(Eigen::Vector3d(0,0,0), Eigen::Vector3d(10,10,10));
         particles[i] = part;
     }
 }

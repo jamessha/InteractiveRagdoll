@@ -69,6 +69,7 @@ double cam_translate_z;
 bool perspective;
 
 Buddy buddy;
+ParticleSystem ps(1, 0.001);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -155,10 +156,10 @@ void myDisplay() {
     glLoadIdentity();              				         // reset transformations
 
     glLoadIdentity();
-    gluPerspective(50.0, 1.0, 1.0, 20.0);
+    gluPerspective(120.0, 1.0, 1.0, 20.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0.0, 0.0, 10.0, // lookfrom
+    gluLookAt(0.0, 0.0, 20.0, // lookfrom
               0.0, 0.0,  0.0, // lookat
               0.0, 1.0,  0.0); // up
 
@@ -182,27 +183,18 @@ void myDisplay() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
-    GLdouble r = 0.05;
+    GLdouble r = 0.1;
     GLint slices = 20;
     GLint stacks = 20;
 
-    vector<Joint> joints;
-    buddy.get_joints(joints);
-    for (int i = 0; i < joints.size(); i++){
-        Eigen::Vector3d p = joints[i].pos;
-        Eigen::Vector3d rvec = joints[i].rvec;
-        glRotatef(rvec(0), 1.0, 0.0, 0.0);
-        glRotatef(rvec(1), 0.0, 1.0, 0.0);
-        glRotatef(rvec(2), 0.0, 0.0, 1.0);
-        glTranslatef(p(0), p(1), p(2));
-
-        glutSolidSphere(r, slices, stacks);
-
-        glTranslatef(-p(0), -p(1), -p(2));
-        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
-        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
-        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
-    }
+    //vector<Joint> joints;
+    //buddy.get_joints(joints);
+    //for (int i = 0; i < joints.size(); i++){
+    //    Eigen::Vector3d p = joints[i].pos;
+    //    glTranslatef(p(0), p(1), p(2));
+    //    glutSolidSphere(r, slices, stacks);
+    //    glTranslatef(-p(0), -p(1), -p(2));
+    //}
 
     //vector<Joint*> body_vertices;
     //buddy.body.get_faces(body_vertices);
@@ -213,19 +205,10 @@ void myDisplay() {
     //    n = (face[1].pos - face[0].pos).cross(face[2].pos - face[0].pos);
     //    for (int j = 0; j < 3; j++){
     //        Eigen::Vector3d p = face[j].pos;
-    //        Eigen::Vector3d rvec = face[j].rvec;
-    //        glRotatef(rvec(0), 1.0, 0.0, 0.0);
-    //        glRotatef(rvec(1), 0.0, 1.0, 0.0);
-    //        glRotatef(rvec(2), 0.0, 0.0, 1.0);
     //        glTranslatef(p(0), p(1), p(2));
-
     //        glNormal3f(n[0], n[1], n[2]);
     //        glVertex3f(face[j].pos[0], face[j].pos[1], face[j].pos[2]);
-
     //        glTranslatef(-p(0), -p(1), -p(2));
-    //        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
-    //        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
-    //        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
     //    }
     //    glEnd();
     //}
@@ -241,26 +224,29 @@ void myDisplay() {
     //    glBegin(GL_LINES);
     //    for (int j = 0; j < 2; j++){
     //        Eigen::Vector3d p = end_pts[j].pos;
-    //        Eigen::Vector3d rvec = end_pts[j].rvec;
-    //        glRotatef(rvec(0), 1.0, 0.0, 0.0);
-    //        glRotatef(rvec(1), 0.0, 1.0, 0.0);
-    //        glRotatef(rvec(2), 0.0, 0.0, 1.0);
     //        glTranslatef(p(0), p(1), p(2));
-
     //        glVertex3f(end_pts[j].pos[0], end_pts[j].pos[1], end_pts[j].pos[2]);
-
     //        glTranslatef(-p(0), -p(1), -p(2));
-    //        glRotatef(-rvec(2), 0.0, 0.0, 1.0);
-    //        glRotatef(-rvec(1), 0.0, 1.0, 0.0);
-    //        glRotatef(-rvec(0), 1.0, 0.0, 0.0);
     //    }
     //    glEnd();
     //} 
 
     //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
+    
+    for (int i = 0; i < ps.num_particles; i++){
+        Particle p = ps.particles[i];
+        Eigen::Vector3d pos = p.curPos;
+        glTranslatef(pos(0), pos(1), pos(2));
+        //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
+        glutSolidSphere(r, slices, stacks);
+        glTranslatef(-pos(0), -pos(1), -pos(2));
+        cout << "particle position: " << pos.transpose() << endl;
+    } 
+    ps.TimeStep();
 
     glFlush();
     glutSwapBuffers();
+	glutPostRedisplay();
 }
 
 int main(int argc, char *argv[]) {
