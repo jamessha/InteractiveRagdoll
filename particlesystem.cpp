@@ -11,7 +11,7 @@ using namespace std;
 
 class Sphere {
     public:
-        Eigen::Vector3d oldPos, curPos, acc;
+        Eigen::Vector3d oldPos, curPos, acc, const_acc;
         double radius;
     public:
         Sphere(double oldx, double oldy, double oldz,
@@ -22,13 +22,14 @@ class Sphere {
             this->curPos << curx, cury, curz;
             this->acc << accx, accy, accz;
             this->radius = radius;
+            const_acc = 0;
         } 
 
         void Verlet(double dtimestep) {
-            Vector3d temp = curPos;
+            Eigen::Vector3d temp = curPos;
             curPos = 2 * curPos - oldPos + (const_acc + acc) * dtimestep * dtimestep;
             oldPos = temp;
-            acc = Vector3d(0,0,0);
+            acc = Eigen::Vector3d(0,0,0);
         }
 
         void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere> spheres) {
@@ -111,6 +112,11 @@ class Link {
 
 class HardLink : public Link {
     public:
+        Link(Sphere *s1, Sphere *s2, double const_dist) {
+            this->s1 = s1;
+            this->s2 = s2;
+            this->const_dist = const_dist;
+        }
         void constraints() {
             Vector3d vec = ((*s1).curPos - (*s2).curPos);
             double magnitude = vec.norm();
