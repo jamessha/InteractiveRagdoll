@@ -156,7 +156,7 @@ void myDisplay() {
     glLoadIdentity();              				         // reset transformations
 
     glLoadIdentity();
-    gluPerspective(120.0, 1.0, 1.0, 20.0);
+    gluPerspective(120.0, 1.0, 1.0, 40.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0.0, 0.0, 20.0, // lookfrom
@@ -234,7 +234,7 @@ void myDisplay() {
     //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
     
     for (int i = 0; i < ps.SS.size(); i++){
-        Sphere s = ps.SS[i];
+        Sphere s = *ps.SS[i];
         Eigen::Vector3d pos = s.curPos;
         glTranslatef(pos(0), pos(1), pos(2));
         //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
@@ -252,11 +252,19 @@ void myDisplay() {
 int main(int argc, char *argv[]) {
     initializeVars();
 
-    Sphere s(0.1, -0.2, 0.05,
+    Sphere s1(0.1, -0.2, 0.05,
              0.0, 0.0, 0.0,
              0.0, -0.9, 0.0,
-             0.1);
-    ps.addSphere(s);
+             0.1, 1.0);
+    Sphere s2(-0.1, 0.2, -0.05,
+             0.0, 0.0, 0.0,
+             0.0, -0.9, 0.0,
+             0.1, 0.5);
+    HardLink l1(&s1, &s2, 1);
+    
+    ps.addSphere(s1);
+    ps.addSphere(s2);
+    ps.addLink(l1);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);

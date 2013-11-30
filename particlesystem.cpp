@@ -13,16 +13,18 @@ class Sphere {
     public:
         Eigen::Vector3d oldPos, curPos, acc, const_acc;
         double radius;
+        double mass;
     public:
         Sphere(double oldx, double oldy, double oldz,
                double curx, double cury, double curz,
                double accx, double accy, double accz,
-               double radius){
+               double radius, double mass){
             this->oldPos << oldx, oldy, oldz;
             this->curPos << curx, cury, curz;
             this->acc << accx, accy, accz;
             this->radius = radius;
-            const_acc = 0;
+            this->mass = mass;
+            this->const_acc << 0.0, 0.0, 0.0;
         } 
 
         void Verlet(double dtimestep) {
@@ -32,7 +34,7 @@ class Sphere {
             acc = Eigen::Vector3d(0,0,0);
         }
 
-        void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere> spheres) {
+        void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere*> spheres) {
             //collisionConstraints(spheres);
             boundaryConstraints(ll, up);
         }
@@ -106,55 +108,63 @@ class Link {
     public:
         Sphere *s1, *s2;
         double const_dist;
-    public:
-        virtual void constraints() = 0;
+
+        virtual void constraints(){cout << "this should not be called" << endl;};
 };
 
 class HardLink : public Link {
     public:
-        Link(Sphere *s1, Sphere *s2, double const_dist) {
+        HardLink(Sphere *s1, Sphere *s2, double const_dist) {
             this->s1 = s1;
             this->s2 = s2;
             this->const_dist = const_dist;
         }
         void constraints() {
-            Vector3d vec = ((*s1).curPos - (*s2).curPos);
+            Eigen::Vector3d vec = ((*s1).curPos - (*s2).curPos);
             double magnitude = vec.norm();
-            double ext_dist = 0.5 * (const_dist - magnitude);
-            if (ext_dist != 0) {
+            double ext_dist = const_dist - magnitude;
+            // lighter objects move further
+            double weight1 = 1.0 - (*s1).mass/((*s1).mass + (*s2).mass);
+            double weight2 = 1.0 - (*s2).mass/((*s1).mass + (*s2).mass);
+            if (abs(ext_dist) > 1e-5) {
                 Eigen::Vector3d s1s2 = vec.normalized();
                 Eigen::Vector3d s2s1 = (-vec).normalized();
-                (*s1).curPos = (*s1).curPos + ext_dist * s1s2;
-                (*s2).curPos = (*s2).curPos + ext_dist * s2s1;
+                (*s1).curPos = (*s1).curPos + weight1*ext_dist*s1s2;
+                (*s2).curPos = (*s2).curPos + weight2*ext_dist*s2s1;
             }
         }
 };
 
 class ParticleSystem {
     public:
-        vector <Sphere> SS;
+        vector <Sphere*> SS;
         double dtimestep;
-        vector <Link> LL;
+        vector <Link*> LL;
     public:
         ParticleSystem(double timestep) {
             this->dtimestep = timestep;
         }
-        void addSphere(Sphere s);
+        void addSphere(Sphere& s);
         //void removeSphere(Sphere s);
+        void addLink(Link& l);
         void TimeStep();
         void Verlet();
         void setAcc();
         void SatisfyConstraints();
 };
 
-void ParticleSystem::addSphere(Sphere s) {
-    SS.push_back(s);
+void ParticleSystem::addSphere(Sphere& s) {
+    SS.push_back(&s);
+}
+
+void ParticleSystem::addLink(Link& l) {
+    LL.push_back(&l);
 }
 
 void ParticleSystem::setAcc() {
-    vector<Sphere>::iterator si;
+    vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        ((*si).acc) << 1, 0, 0;
+        ((*si)->acc) << 1, 0, 0;
     }
 }
 
@@ -176,9 +186,9 @@ void ParticleSystem::Verlet () {
         particles[i] = part;
     } */
 
-    vector<Sphere>::iterator si;
+    vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        (si)->Verlet(dtimestep);
+        (*si)->Verlet(dtimestep);
     }
 }
 
@@ -196,12 +206,12 @@ void ParticleSystem::SatisfyConstraints() {
         particles[i] = part;
     } */
 
-    vector<Sphere>::iterator si;
+    vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        si->constraints(Eigen::Vector3d(0,0,0), Eigen::Vector3d(10,10,10), SS);
+        (*si)->constraints(Eigen::Vector3d(-10,-10,-10), Eigen::Vector3d(10,10,10), SS);
     }
-    vector<Link>::iterator li;
+    vector<Link*>::iterator li;
     for (li = LL.begin(); li != LL.end(); ++li) {
-        li->constraints();
+        (*li)->constraints();
     }
 }
