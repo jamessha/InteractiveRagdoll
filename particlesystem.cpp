@@ -172,12 +172,7 @@ void ParticleSystem::Verlet () {
 
     vector<Sphere>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        Eigen::Vector3d curPos = si->curPos;
-        Eigen::Vector3d temp = curPos;
-        Eigen::Vector3d oldPos = si->oldPos;
-        Eigen::Vector3d acc = si->acc;
-        si->curPos = 2 * curPos - oldPos + acc * dtimestep * dtimestep;
-        si->oldPos = temp;
+        (si)->Verlet(dtimestep);
     }
 }
 
