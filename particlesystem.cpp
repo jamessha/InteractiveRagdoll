@@ -23,6 +23,14 @@ class Sphere {
             this->acc << accx, accy, accz;
             this->radius = radius;
         } 
+
+        void Verlet(double dtimestep) {
+            Vector3d temp = curPos;
+            curPos = 2 * curPos - oldPos + (const_acc + acc) * dtimestep * dtimestep;
+            oldPos = temp;
+            acc = Vector3d(0,0,0);
+        }
+
         void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere> spheres) {
             collisionConstraints(spheres);
             boundaryConstraints(ll, up);
@@ -66,27 +74,51 @@ class Sphere {
             }
         }
 
-        void collisionConstraints(vector<Sphere> spheres) {
+        void collisionConstraints(vector<Sphere*> spheres) {
+            vector<Sphere*>::iterator si;
+            for (si = spheres.begin(); si != spheres.end(); ++si) {
+                Sphere *other = &(**si);
+                Eigen::Vector3d colaxis = (**si).curPos - (*this).curPos;
+                if (other != this && (colaxis.norm() < (**si).radius + (*this).radius)) {
+                    Eigen::Vector3d thiscolaxis = colaxis.normalized();
+                    Eigen::Vector3d thisVel = curPos - oldPos;
+                    Eigen::Vector3d thisVelx = thiscolaxis.dot(thisVel) * thiscolaxis;
+                    Eigen::Vector3d thisVely = thisVel - thisVelx;
 
+                    Eigen::Vector3d othercolaxis = -thiscolaxis;
+                    Eigen::Vector3d otherVel = other->curPos - other->oldPos;
+                    Eigen::Vector3d otherVelx = othercolaxis.dot(otherVel) * othercolaxis;
+                    Eigen::Vector3d otherVely = otherVel - otherVelx;
+
+                    Eigen::Vector3d otherNewVel = thisVelx + otherVely;
+                    Eigen::Vector3d thisNewVel = otherVelx + thisVely;
+
+                    oldPos = curPos - thisNewVel;
+                    (*si)->oldPos = (*si)->curPos - otherNewVel;
+                }
+            }
         }
 };
 
 class Link {
     public:
-        Sphere s1, s2;
+        Sphere *s1, *s2;
         double const_dist;
     public:
+        virtual void constraints() = 0;
+};
+
+class HardLink : public Link {
+    public:
         void constraints() {
-            distanceConstraints();
-        }
-        void distanceConstraints() {
-            double magnitude = (s1.curPos - s2.curPos).norm();
+            Vector3d vec = ((*s1).curPos - (*s2).curPos);
+            double magnitude = vec.norm();
             double ext_dist = 0.5 * (const_dist - magnitude);
             if (ext_dist != 0) {
-                Eigen::Vector3d s1s2 = (s1.curPos - s2.curPos).normalized();
-                Eigen::Vector3d s2s1 = (s2.curPos - s1.curPos).normalized();
-                s1.curPos = s1.curPos + ext_dist * s1s2;
-                s2.curPos = s2.curPos + ext_dist * s2s1;
+                Eigen::Vector3d s1s2 = vec.normalized();
+                Eigen::Vector3d s2s1 = (-vec).normalized();
+                (*s1).curPos = (*s1).curPos + ext_dist * s1s2;
+                (*s2).curPos = (*s2).curPos + ext_dist * s2s1;
             }
         }
 };
