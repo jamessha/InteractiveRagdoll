@@ -32,7 +32,7 @@ class Sphere {
         }
 
         void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere> spheres) {
-            collisionConstraints(spheres);
+            //collisionConstraints(spheres);
             boundaryConstraints(ll, up);
         }
 
@@ -74,6 +74,7 @@ class Sphere {
             }
         }
 
+        //May want to change to list of Spheres
         void collisionConstraints(vector<Sphere*> spheres) {
             vector<Sphere*>::iterator si;
             for (si = spheres.begin(); si != spheres.end(); ++si) {
