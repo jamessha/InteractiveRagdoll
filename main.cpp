@@ -25,7 +25,7 @@
 #include <map>
 #include <algorithm>
 
-#include "objects.h"
+#include "buddy.h"
 #include "utils.h"
 
 // Fuck Ubuntu 13.10 
@@ -102,6 +102,7 @@ void initializeVars() {
     viewport.h = 800;
     perspective = true;  //on default, perspective is turned on. This is just for testing out purposes later.
     ps.GetBox(box_verts);
+    ps.setAcc(0.0, -0.9, 0.0);
 }
 
 // function that handles keyboard events
@@ -313,17 +314,14 @@ int main(int argc, char *argv[]) {
     initializeVars();
 
     Sphere s1(0.0, 0.0, 0.0,
-              0.1, 0.4, -0.2,
-              0.0, -0.9, 0.0,
               0.1, 1.0);
+    s1.initVel(0.1, 0.4, -0.2);
     Sphere s2(0.0, 0.0, 0.0,
-              0.3, 0.1, 0.2,
-              0.0, -0.9, 0.0,
               0.1, 1.0);
+    s2.initVel(0.3, 0.1, 0.2);
     Sphere s3(0.0, 0.0, 0.0,
-              -0.05, 0.23, 0.17,
-              0.0, -0.9, 0.0,
               0.1, 0.5);
+    s2.initVel(-0.05, 0.23, 0.17);
     HardLink l1(&s1, &s2, 1);
     HardLink l2(&s1, &s3, 1);
     

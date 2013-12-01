@@ -11,35 +11,46 @@ using namespace std;
 
 class Sphere {
     public:
-        Eigen::Vector3d oldPos, curPos, acc, const_acc;
+        Eigen::Vector3d oldPos, curPos, acc;
         double radius;
         double mass;
 
-        Sphere(double oldx, double oldy, double oldz,
-               double curx, double cury, double curz,
-               double accx, double accy, double accz,
+        Sphere(){}
+
+        Sphere(double curx, double cury, double curz,
                double radius, double mass){
-            this->oldPos << oldx, oldy, oldz;
+            this->oldPos << curx, cury, curz;
             this->curPos << curx, cury, curz;
-            this->acc << accx, accy, accz;
             this->radius = radius;
             this->mass = mass;
-            this->const_acc << 0.0, 0.0, 0.0;
+            this->acc << 0, 0, 0;
         } 
 
-        void Verlet(double dtimestep) {
+        void initVel(double velx, double vely, double velz){
+            this->oldPos << curPos(0)-velx, curPos(1)-vely, curPos(2)-velz;
+        } 
+
+        void setAcc(double accx, double accy, double accz){
+            this->acc << accx, accy, accz;
+        } 
+
+        void zeroAcc(){
+            this->acc << 0, 0, 0;
+        } 
+
+        void Verlet(double dtimestep, Eigen::Vector3d& world_acc) {
             Eigen::Vector3d temp = curPos;
-            curPos = 2 * curPos - oldPos + (const_acc + acc) * dtimestep * dtimestep;
+            curPos = 2*curPos-oldPos + (acc+world_acc)*dtimestep*dtimestep;
             oldPos = temp;
             acc = Eigen::Vector3d(0,0,0);
         }
 
-        void constraints (Eigen::Vector3d ll, Eigen::Vector3d up, vector<Sphere*> spheres) {
+        void constraints (Eigen::Vector3d& ll, Eigen::Vector3d up, vector<Sphere*>& spheres) {
             //collisionConstraints(spheres);
             boundaryConstraints(ll, up);
         }
 
-        void boundaryConstraints (Eigen::Vector3d ll, Eigen::Vector3d up) {
+        void boundaryConstraints (Eigen::Vector3d& ll, Eigen::Vector3d& up) {
             double x = curPos[0];
             double y = curPos[1];
             double z = curPos[2];
@@ -114,11 +125,14 @@ class Link {
 
 class HardLink : public Link {
     public:
+        HardLink(){}
+
         HardLink(Sphere *s1, Sphere *s2, double const_dist) {
             this->s1 = s1;
             this->s2 = s2;
             this->const_dist = const_dist;
         }
+
         double constraints() {
             Eigen::Vector3d vec = ((*s1).curPos - (*s2).curPos);
             double magnitude = vec.norm();
@@ -143,6 +157,7 @@ class ParticleSystem {
         vector <Link*> LL;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
+        Eigen::Vector3d world_acc;
 
         ParticleSystem(double box_corner_x, double box_corner_y, double box_corner_z,
                        double box_dims_x, double box_dims_y, double box_dims_z,
@@ -150,14 +165,19 @@ class ParticleSystem {
             this->box_corner << box_corner_x, box_corner_y, box_corner_z;
             this->box_dims << box_dims_x, box_dims_y, box_dims_z;
             this->dtimestep = timestep;
+            this->world_acc << 0, 0, 0;
         }
+
+        void setAcc(double accx, double accy, double accz){
+            this->world_acc << accy, accy, accz;
+        } 
 
         void addSphere(Sphere& s);
         //void removeSphere(Sphere s);
         void addLink(Link& l);
+        void zeroParticleAcc();
         void TimeStep();
         void Verlet();
-        void setAcc();
         void SatisfyConstraints();
         void GetBox(vector<Eigen::Vector3d>& vertices);
 };
@@ -170,12 +190,11 @@ void ParticleSystem::addLink(Link& l) {
     LL.push_back(&l);
 }
 
-void ParticleSystem::setAcc() {
-    vector<Sphere*>::iterator si;
-    for (si = SS.begin(); si != SS.end(); ++si) {
-        ((*si)->acc) << 1, 0, 0;
-    }
-}
+void ParticleSystem::zeroParticleAcc(){
+    for (int i = 0; i < this->SS.size(); i++){
+        (this->SS[i])->zeroAcc();
+    } 
+} 
 
 void ParticleSystem::Verlet () {
     /*
@@ -197,12 +216,11 @@ void ParticleSystem::Verlet () {
 
     vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        (*si)->Verlet(dtimestep);
+        (*si)->Verlet(dtimestep, world_acc);
     }
 }
 
 void ParticleSystem::TimeStep() {
-    setAcc();
     Verlet();
     SatisfyConstraints();
 }
