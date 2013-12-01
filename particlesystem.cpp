@@ -109,7 +109,7 @@ class Link {
         Sphere *s1, *s2;
         double const_dist;
 
-        virtual void constraints(){cout << "this should not be called" << endl;};
+        virtual double constraints(){cout << "this should not be called" << endl;};
 };
 
 class HardLink : public Link {
@@ -119,7 +119,7 @@ class HardLink : public Link {
             this->s2 = s2;
             this->const_dist = const_dist;
         }
-        void constraints() {
+        double constraints() {
             Eigen::Vector3d vec = ((*s1).curPos - (*s2).curPos);
             double magnitude = vec.norm();
             double ext_dist = const_dist - magnitude;
@@ -132,6 +132,7 @@ class HardLink : public Link {
                 (*s1).curPos = (*s1).curPos + weight1*ext_dist*s1s2;
                 (*s2).curPos = (*s2).curPos + weight2*ext_dist*s2s1;
             }
+            return ext_dist;
         }
 };
 
@@ -219,8 +220,13 @@ void ParticleSystem::SatisfyConstraints() {
         (*si)->constraints(box_corner, box_corner+box_dims, SS);
     }
     vector<Link*>::iterator li;
-    for (li = LL.begin(); li != LL.end(); ++li) {
-        (*li)->constraints();
+    double ext_dist = -1;
+    while (abs(ext_dist) > 1e-5){
+        ext_dist = 0;
+        for (li = LL.begin(); li != LL.end(); ++li) {
+            ext_dist = fmax(ext_dist, (*li)->constraints());
+        }
+        //cout << ext_dist << endl;
     }
 }
 

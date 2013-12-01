@@ -300,7 +300,7 @@ void myDisplay() {
         //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
         glutSolidSphere(s.radius, slices, stacks);
         glTranslatef(-pos(0), -pos(1), -pos(2));
-        cout << "particle position: " << pos.transpose() << endl;
+        //cout << "particle position: " << pos.transpose() << endl;
     } 
     ps.TimeStep();
 
@@ -312,19 +312,26 @@ void myDisplay() {
 int main(int argc, char *argv[]) {
     initializeVars();
 
-    Sphere s1(0.1, -0.2, 0.05,
-             0.0, 0.0, 0.0,
-             0.0, -0.9, 0.0,
-             0.1, 1.0);
-    Sphere s2(-0.1, 0.2, -0.05,
-             0.0, 0.0, 0.0,
-             0.0, -0.9, 0.0,
-             0.1, 0.5);
+    Sphere s1(0.0, 0.0, 0.0,
+              0.1, 0.4, -0.2,
+              0.0, -0.9, 0.0,
+              0.1, 1.0);
+    Sphere s2(0.0, 0.0, 0.0,
+              0.3, 0.1, 0.2,
+              0.0, -0.9, 0.0,
+              0.1, 1.0);
+    Sphere s3(0.0, 0.0, 0.0,
+              -0.05, 0.23, 0.17,
+              0.0, -0.9, 0.0,
+              0.1, 0.5);
     HardLink l1(&s1, &s2, 1);
+    HardLink l2(&s1, &s3, 1);
     
     ps.addSphere(s1);
     ps.addSphere(s2);
+    ps.addSphere(s3);
     ps.addLink(l1);
+    ps.addLink(l2);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
