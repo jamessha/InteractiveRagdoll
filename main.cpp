@@ -26,6 +26,14 @@
 #include <algorithm>
 
 #include "objects.h"
+#include "utils.h"
+
+// Fuck Ubuntu 13.10 
+#include <pthread.h>
+void junk(){
+    int i;
+    i = pthread_getconcurrency();
+};
 
 #define SPACEBAR 32
 #define ESCAPE 27
@@ -69,7 +77,12 @@ double cam_translate_z;
 bool perspective;
 
 Buddy buddy;
-ParticleSystem ps(0.001);
+Eigen::Vector3d box_corner(-10, -10, -10);
+Eigen::Vector3d box_dims(20, 20, 20);
+ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
+                  box_dims(0), box_dims(1), box_dims(2),
+                  0.001);
+vector<Eigen::Vector3d> box_verts;
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -88,6 +101,7 @@ void initializeVars() {
     viewport.w = 800;
     viewport.h = 800;
     perspective = true;  //on default, perspective is turned on. This is just for testing out purposes later.
+    ps.GetBox(box_verts);
 }
 
 // function that handles keyboard events
@@ -148,7 +162,51 @@ void myReshape(int w, int h) {
 
 } 
 
- 
+void drawBox(){
+    // Draw box
+    double radius = 0.1;
+    int slices = 20;
+    // Side 1
+    renderCylinder_convenient(box_verts[0](0), box_verts[0](1), box_verts[0](2),
+                              box_verts[1](0), box_verts[1](1), box_verts[1](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[1](0), box_verts[1](1), box_verts[1](2),
+                              box_verts[2](0), box_verts[2](1), box_verts[2](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[2](0), box_verts[2](1), box_verts[2](2),
+                              box_verts[3](0), box_verts[3](1), box_verts[3](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[0](0), box_verts[0](1), box_verts[0](2),
+                              box_verts[3](0), box_verts[3](1), box_verts[3](2),
+                              radius, slices);
+    // Side 2 
+    renderCylinder_convenient(box_verts[4](0), box_verts[4](1), box_verts[4](2),
+                              box_verts[5](0), box_verts[5](1), box_verts[5](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[5](0), box_verts[5](1), box_verts[5](2),
+                              box_verts[6](0), box_verts[6](1), box_verts[6](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[6](0), box_verts[6](1), box_verts[6](2),
+                              box_verts[7](0), box_verts[7](1), box_verts[7](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[4](0), box_verts[4](1), box_verts[4](2),
+                              box_verts[7](0), box_verts[7](1), box_verts[7](2),
+                              radius, slices);
+    // Join sides
+    renderCylinder_convenient(box_verts[0](0), box_verts[0](1), box_verts[0](2),
+                              box_verts[4](0), box_verts[4](1), box_verts[4](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[1](0), box_verts[1](1), box_verts[1](2),
+                              box_verts[5](0), box_verts[5](1), box_verts[5](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[2](0), box_verts[2](1), box_verts[2](2),
+                              box_verts[6](0), box_verts[6](1), box_verts[6](2),
+                              radius, slices);
+    renderCylinder_convenient(box_verts[3](0), box_verts[3](1), box_verts[3](2),
+                              box_verts[7](0), box_verts[7](1), box_verts[7](2),
+                              radius, slices);
+
+} 
 
 // function that does the actual drawing of stuff
 void myDisplay() {
@@ -156,7 +214,7 @@ void myDisplay() {
     glLoadIdentity();              				         // reset transformations
 
     glLoadIdentity();
-    gluPerspective(120.0, 1.0, 1.0, 40.0);
+    gluPerspective(120.0, 1.0, 1.0, 50.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     gluLookAt(0.0, 0.0, 20.0, // lookfrom
@@ -233,6 +291,8 @@ void myDisplay() {
 
     //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
     
+    drawBox();
+
     for (int i = 0; i < ps.SS.size(); i++){
         Sphere s = *ps.SS[i];
         Eigen::Vector3d pos = s.curPos;

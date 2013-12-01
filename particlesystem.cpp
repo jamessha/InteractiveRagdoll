@@ -14,7 +14,7 @@ class Sphere {
         Eigen::Vector3d oldPos, curPos, acc, const_acc;
         double radius;
         double mass;
-    public:
+
         Sphere(double oldx, double oldy, double oldz,
                double curx, double cury, double curz,
                double accx, double accy, double accz,
@@ -140,10 +140,17 @@ class ParticleSystem {
         vector <Sphere*> SS;
         double dtimestep;
         vector <Link*> LL;
-    public:
-        ParticleSystem(double timestep) {
+        Eigen::Vector3d box_corner;
+        Eigen::Vector3d box_dims;
+
+        ParticleSystem(double box_corner_x, double box_corner_y, double box_corner_z,
+                       double box_dims_x, double box_dims_y, double box_dims_z,
+                       double timestep) {
+            this->box_corner << box_corner_x, box_corner_y, box_corner_z;
+            this->box_dims << box_dims_x, box_dims_y, box_dims_z;
             this->dtimestep = timestep;
         }
+
         void addSphere(Sphere& s);
         //void removeSphere(Sphere s);
         void addLink(Link& l);
@@ -151,6 +158,7 @@ class ParticleSystem {
         void Verlet();
         void setAcc();
         void SatisfyConstraints();
+        void GetBox(vector<Eigen::Vector3d>& vertices);
 };
 
 void ParticleSystem::addSphere(Sphere& s) {
@@ -208,10 +216,39 @@ void ParticleSystem::SatisfyConstraints() {
 
     vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        (*si)->constraints(Eigen::Vector3d(-10,-10,-10), Eigen::Vector3d(10,10,10), SS);
+        (*si)->constraints(box_corner, box_corner+box_dims, SS);
     }
     vector<Link*>::iterator li;
     for (li = LL.begin(); li != LL.end(); ++li) {
         (*li)->constraints();
     }
 }
+
+void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
+    Eigen::Vector3d ll = box_corner;
+    Eigen::Vector3d ur = box_corner + box_dims;
+    double minx = ll[0];
+    double maxx = ur[0];
+    double miny = ll[1];
+    double maxy = ur[1];
+    double minz = ll[2];
+    double maxz = ur[2];
+
+    Eigen::Vector3d corner_1(minx, miny, minz);
+    Eigen::Vector3d corner_2(minx, maxy, minz); 
+    Eigen::Vector3d corner_3(maxx, maxy, minz); 
+    Eigen::Vector3d corner_4(maxx, miny, minz); 
+    Eigen::Vector3d corner_5(minx, miny, maxz);
+    Eigen::Vector3d corner_6(minx, maxy, maxz); 
+    Eigen::Vector3d corner_7(maxx, maxy, maxz); 
+    Eigen::Vector3d corner_8(maxx, miny, maxz); 
+
+    vertices.push_back(corner_1);
+    vertices.push_back(corner_2);
+    vertices.push_back(corner_3);
+    vertices.push_back(corner_4);
+    vertices.push_back(corner_5);
+    vertices.push_back(corner_6);
+    vertices.push_back(corner_7);
+    vertices.push_back(corner_8);
+} 

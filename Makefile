@@ -6,7 +6,7 @@ ifeq ($(shell sw_vers 2>/dev/null | grep Mac | awk '{ print $$2}'),Mac)
 
 else
 	CFLAGS = -g -DGL_GLEXT_PROTOTYPES -Iglut-3.7.6-bin\
-		-I/usr/local/include -I/usr/include -I/home/ff/cs184/eigen -I/usr/include/eigen3
+		-I/usr/local/include -I/usr/include -I/home/ff/cs184/eigen -I/usr/include/eigen3 -pthread
 	LDFLAGS = -ljpeg -lGL -lGLU -lm -lstdc++ -lglut
 endif
 
