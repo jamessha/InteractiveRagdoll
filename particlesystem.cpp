@@ -127,10 +127,10 @@ class HardLink : public Link {
     public:
         HardLink(){}
 
-        HardLink(Sphere *s1, Sphere *s2, double const_dist) {
+        HardLink(Sphere *s1, Sphere *s2) {
             this->s1 = s1;
             this->s2 = s2;
-            this->const_dist = const_dist;
+            this->const_dist = ((*s1).curPos-(*s2).curPos).norm();
         }
 
         double constraints() {
@@ -169,7 +169,7 @@ class ParticleSystem {
         }
 
         void setAcc(double accx, double accy, double accz){
-            this->world_acc << accy, accy, accz;
+            this->world_acc << accx, accy, accz;
         } 
 
         void addSphere(Sphere& s);

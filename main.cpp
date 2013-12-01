@@ -81,7 +81,7 @@ Eigen::Vector3d box_corner(-10, -10, -10);
 Eigen::Vector3d box_dims(20, 20, 20);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
-                  0.001);
+                  0.05);
 vector<Eigen::Vector3d> box_verts;
 
 // Default
@@ -102,7 +102,9 @@ void initializeVars() {
     viewport.h = 800;
     perspective = true;  //on default, perspective is turned on. This is just for testing out purposes later.
     ps.GetBox(box_verts);
-    ps.setAcc(0.0, -0.9, 0.0);
+    ps.setAcc(0.0, -9, 0.0);
+    ps.SS = buddy.joints;
+    ps.LL = buddy.limbs;
 }
 
 // function that handles keyboard events
@@ -246,62 +248,14 @@ void myDisplay() {
     GLint slices = 20;
     GLint stacks = 20;
 
-    //vector<Joint> joints;
-    //buddy.get_joints(joints);
-    //for (int i = 0; i < joints.size(); i++){
-    //    Eigen::Vector3d p = joints[i].pos;
-    //    glTranslatef(p(0), p(1), p(2));
-    //    glutSolidSphere(r, slices, stacks);
-    //    glTranslatef(-p(0), -p(1), -p(2));
-    //}
-
-    //vector<Joint*> body_vertices;
-    //buddy.body.get_faces(body_vertices);
-    //for (int i = 0; i < body_vertices.size(); i++){
-    //    Joint* face = body_vertices[i];
-    //    glBegin(GL_POLYGON);
-    //    Eigen::Vector3d n;
-    //    n = (face[1].pos - face[0].pos).cross(face[2].pos - face[0].pos);
-    //    for (int j = 0; j < 3; j++){
-    //        Eigen::Vector3d p = face[j].pos;
-    //        glTranslatef(p(0), p(1), p(2));
-    //        glNormal3f(n[0], n[1], n[2]);
-    //        glVertex3f(face[j].pos[0], face[j].pos[1], face[j].pos[2]);
-    //        glTranslatef(-p(0), -p(1), -p(2));
-    //    }
-    //    glEnd();
-    //}
-
-    //vector<Limb> limbs;
-    //buddy.get_limbs(limbs);
-    //for (int i = 0; i < limbs.size(); i++){
-    //    Limb limb = limbs[i];
-    //    Joint end_pts[2];
-    //    end_pts[0] = limb.joint_1;
-    //    end_pts[1] = limb.joint_2;
-    //    glLineWidth(5);
-    //    glBegin(GL_LINES);
-    //    for (int j = 0; j < 2; j++){
-    //        Eigen::Vector3d p = end_pts[j].pos;
-    //        glTranslatef(p(0), p(1), p(2));
-    //        glVertex3f(end_pts[j].pos[0], end_pts[j].pos[1], end_pts[j].pos[2]);
-    //        glTranslatef(-p(0), -p(1), -p(2));
-    //    }
-    //    glEnd();
-    //} 
-
-    //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
-    
     drawBox();
 
     for (int i = 0; i < ps.SS.size(); i++){
         Sphere s = *ps.SS[i];
         Eigen::Vector3d pos = s.curPos;
         glTranslatef(pos(0), pos(1), pos(2));
-        //glutSolidTeapot(2);   //renders a teapot -- can use this to check if rotation works or not.
         glutSolidSphere(s.radius, slices, stacks);
         glTranslatef(-pos(0), -pos(1), -pos(2));
-        //cout << "particle position: " << pos.transpose() << endl;
     } 
     ps.TimeStep();
 
@@ -312,24 +266,6 @@ void myDisplay() {
 
 int main(int argc, char *argv[]) {
     initializeVars();
-
-    Sphere s1(0.0, 0.0, 0.0,
-              0.1, 1.0);
-    s1.initVel(0.1, 0.4, -0.2);
-    Sphere s2(0.0, 0.0, 0.0,
-              0.1, 1.0);
-    s2.initVel(0.3, 0.1, 0.2);
-    Sphere s3(0.0, 0.0, 0.0,
-              0.1, 0.5);
-    s2.initVel(-0.05, 0.23, 0.17);
-    HardLink l1(&s1, &s2, 1);
-    HardLink l2(&s1, &s3, 1);
-    
-    ps.addSphere(s1);
-    ps.addSphere(s2);
-    ps.addSphere(s3);
-    ps.addLink(l1);
-    ps.addLink(l2);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
