@@ -7,25 +7,41 @@
 
 using namespace std;
 
+// Holds the size of body parts as cylinders
+class BodyPart{
+    public:
+        BodyPart(){}
+
+        BodyPart(Sphere* node1, Sphere* node2, double r){
+            this->node1 = node1;
+            this->node2 = node2;
+            this->r = r;
+        } 
+
+        Sphere* node1;
+        Sphere* node2;
+        double r;
+};
+
 class Buddy{
 	public:
 		Buddy(){
-			// Init Joints
-            this->head = new Sphere(0.0, 2.0, 0.0, 0.1, 1.0);
-            this->spine_top = new Sphere(0.0, 1.8, 0.3, 0.1, 1.0);
-            this->pelvis = new Sphere(0.0, 1.0, 0.0, 0.1, 1.0);
-            this->l_shoulder = new Sphere(-0.5, 1.8, 0.0, 0.1, 1.0);
-            this->r_shoulder = new Sphere(0.5, 1.8, 0.0, 0.1, 1.0);
-            this->l_elbow = new Sphere(-0.6, 1.5, 0.0, 0.1, 1.0);
-            this->r_elbow = new Sphere(0.6, 1.5, 0.0, 0.1, 1.0);
-            this->l_wrist = new Sphere(-0.6, 1.2, 0.0, 0.1, 1.0);
-            this->r_wrist = new Sphere(0.6, 1.2, 0.0, 0.1, 1.0);
-            this->l_knee = new Sphere(-0.5, 0.5, 0.0, 0.1, 1.0);
-            this->r_knee = new Sphere(0.5, 0.5, 0.0, 0.1, 1.0);
-            this->l_ankle = new Sphere(-0.5, 0.0, 0.0, 0.1, 1.0);
-            this->r_ankle = new Sphere(0.5, 0.0, 0.0, 0.1, 1.0);
+			// Init Joints (integrated over)
+            this->head = new Sphere(0.0, 5.0, 0.0, 0.0, 1.0);
+            this->spine_top = new Sphere(0.0, 4.2, 0.3, 0.0, 1.0);
+            this->pelvis = new Sphere(0.0, 2.5, 0.0, 0.0, 1.0);
+            this->l_shoulder = new Sphere(-1.5, 4.2, 0.0, 0.0, 1.0);
+            this->r_shoulder = new Sphere(1.5, 4.2, 0.0, 0.0, 1.0);
+            this->l_elbow = new Sphere(-1.5, 3.2, 0.0, 0.0, 1.0);
+            this->r_elbow = new Sphere(1.5, 3.2, 0.0, 0.0, 1.0);
+            this->l_wrist = new Sphere(-1.5, 2.2, 0.0, 0.0, 1.0);
+            this->r_wrist = new Sphere(1.5, 2.2, 0.0, 0.0, 1.0);
+            this->l_knee = new Sphere(-1.5, 1.75, 0.0, 0.0, 1.0);
+            this->r_knee = new Sphere(1.5, 1.75, 0.0, 0.0, 1.0);
+            this->l_ankle = new Sphere(-1.5, 0.0, 0.0, 0.0, 1.0);
+            this->r_ankle = new Sphere(1.5, 0.0, 0.0, 0.0, 1.0);
             
-            // Init Limbs
+            // Init Limbs (enforces distance constraints)
             this->neck = new HardLink(head, spine_top);
             this->clavicle = new HardLink(l_shoulder, r_shoulder);
             this->spine = new HardLink(spine_top, pelvis);
@@ -41,6 +57,18 @@ class Buddy{
             this->r_femur = new HardLink(pelvis, r_knee);
 			this->l_tibia = new HardLink(l_knee, l_ankle);
             this->r_tibia = new HardLink(r_knee, r_ankle);
+
+            // Init BodyParts (for rendering)
+            this->head_part = new BodyPart(head, spine_top, 0.4);
+            this->body_part = new BodyPart(spine_top, pelvis, 0.75);
+            this->l_humerus_part = new BodyPart(l_shoulder, l_elbow, 0.25);
+            this->r_humerus_part = new BodyPart(r_shoulder, r_elbow, 0.25);
+            this->l_ulna_part = new BodyPart(l_elbow, l_wrist, 0.25);
+            this->r_ulna_part = new BodyPart(r_elbow, r_wrist, 0.25);
+            this->l_femur_part = new BodyPart(pelvis, l_knee, 0.25);
+            this->r_femur_part = new BodyPart(pelvis, r_knee, 0.25);
+            this->l_tibia_part = new BodyPart(l_knee, l_ankle, 0.25);
+            this->r_tibia_part = new BodyPart(r_knee, r_ankle, 0.25);
 
             this->joints.push_back(head);
             this->joints.push_back(spine_top);
@@ -71,6 +99,17 @@ class Buddy{
             this->limbs.push_back(r_femur);
             this->limbs.push_back(l_tibia);
             this->limbs.push_back(r_tibia);
+
+            this->body_parts.push_back(head_part);
+            this->body_parts.push_back(body_part);
+            this->body_parts.push_back(l_humerus_part);
+            this->body_parts.push_back(r_humerus_part);
+            this->body_parts.push_back(l_ulna_part);
+            this->body_parts.push_back(r_ulna_part);
+            this->body_parts.push_back(l_femur_part);
+            this->body_parts.push_back(r_femur_part);
+            this->body_parts.push_back(l_tibia_part);
+            this->body_parts.push_back(r_tibia_part);
 		}
 
 		Sphere* head;
@@ -103,6 +142,18 @@ class Buddy{
 		HardLink* l_tibia;
 		HardLink* r_tibia;
 
+        BodyPart* head_part;
+        BodyPart* body_part;
+        BodyPart* l_humerus_part;
+        BodyPart* r_humerus_part;
+        BodyPart* l_ulna_part;
+        BodyPart* r_ulna_part;
+        BodyPart* l_femur_part;
+        BodyPart* r_femur_part;
+        BodyPart* l_tibia_part;
+        BodyPart* r_tibia_part;
+
         vector<Sphere*> joints;
         vector<Link*> limbs;
+        vector<BodyPart*> body_parts;
 };

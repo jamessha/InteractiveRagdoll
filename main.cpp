@@ -250,22 +250,14 @@ void myDisplay() {
     
     // Render Box
     drawBox();
-    // Render Joints
-    for (int i = 0; i < ps.SS.size(); i++){
-        Sphere s = *ps.SS[i];
-        Eigen::Vector3d pos = s.curPos;
-        glTranslatef(pos(0), pos(1), pos(2));
-        glutSolidSphere(s.radius, slices, stacks);
-        glTranslatef(-pos(0), -pos(1), -pos(2));
-    } 
-    // Render Limbs
-    double limb_r = 0.1;
+     
+    // Render Body
     int subdiv = 20;
-    for (int i = 0; i < ps.LL.size(); i++){
-        Link* l = ps.LL[i];
-        renderCylinder_convenient(l->s1->curPos(0), l->s1->curPos(1), l->s1->curPos(2),
-                                  l->s2->curPos(0), l->s2->curPos(1), l->s2->curPos(2),
-                                  limb_r, subdiv);
+    for (int i = 0; i < buddy.body_parts.size(); i++){
+        BodyPart* l = buddy.body_parts[i];
+        renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
+                                  l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
+                                  l->r, subdiv);
     }
     ps.TimeStep();
 
