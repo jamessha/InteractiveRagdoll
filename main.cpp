@@ -26,7 +26,6 @@
 #include <algorithm>
 
 #include "buddy.h"
-#include "utils.h"
 
 // Fuck Ubuntu 13.10 
 #include <pthread.h>
@@ -105,6 +104,7 @@ void initializeVars() {
     ps.setAcc(0.0, -9, 0.0);
     ps.SS = buddy.joints;
     ps.LL = buddy.limbs;
+    ps.CC = buddy.body_parts;
 }
 
 // function that handles keyboard events
@@ -254,7 +254,7 @@ void myDisplay() {
     // Render Body
     int subdiv = 20;
     for (int i = 0; i < buddy.body_parts.size(); i++){
-        BodyPart* l = buddy.body_parts[i];
+        Cylinder* l = buddy.body_parts[i];
         renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
                                   l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
                                   l->r, subdiv);

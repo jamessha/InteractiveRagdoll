@@ -1,5 +1,7 @@
 #include <vector>
 
+#include "utils.h"
+
 //With inspiration from Thomas Jakobsen and that Verlet website
 
 
@@ -115,12 +117,105 @@ class Sphere {
         }
 };
 
+class Cylinder{
+    public:
+        Cylinder(){}
+
+        Cylinder(Sphere* node1, Sphere* node2, double r){
+            this->node1 = node1;
+            this->node2 = node2;
+            this->r = r;
+        } 
+
+        void constraints(vector<Cylinder*>& body_parts, int idx){
+            for (int i = 0; i < body_parts.size(); i++){
+                Eigen::Vector3d intersect_1;
+                Eigen::Vector3d intersect_2;
+                bool did_intersect = body_parts[i]->LineIntersect(this->node1->curPos, this->node2->curPos, intersect_1, intersect_2);
+                if (!did_intersect)
+                    continue;
+
+                Eigen::Vector3d intersect_mid = (intersect_1 + intersect_2)/2;
+                //double dist = PointLineSegDist(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_mid);
+                Eigen::Vector3d mid_proj = ProjPointLineSeg(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_mid);
+                double dist = (intersect_mid - mid_proj).norm();
+                double ext_dist = body_parts[i]->r - dist;
+
+                if (ext_dist < 0) // Numerical problems?
+                    continue;
+
+                Eigen::Vector3d old_mid = (this->node1->oldPos + this->node2->oldPos)/2;
+                Eigen::Vector3d cur_mid = (this->node1->curPos + this->node2->curPos)/2;
+                // Hacks to get rid of nans
+                old_mid(0) += 1e-10; old_mid(1) += 1e-10; old_mid(2) += 1e-10;
+                Eigen::Vector3d ref_dir = (old_mid - cur_mid).normalized();
+
+                double dist_travelled = (old_mid - cur_mid).norm(); 
+                //cout << dist_travelled << endl;
+                // Bring to surface of cylinder
+                this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
+                this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
+                // Set oldPos to backside
+                this->node1->oldPos = this->node1->curPos - (dist_travelled - ext_dist)*ref_dir;
+                this->node2->oldPos = this->node2->curPos - (dist_travelled - ext_dist)*ref_dir;
+                // Reflect curPos
+                this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
+                this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
+            }
+        }
+
+        // Adapted from http://stackoverflow.com/questions/4078401/trying-to-optimize-line-vs-cylinder-intersection
+        // - line has starting point (x0, y0, z0) and ending point (x1, y1, z1) 
+        bool LineIntersect(Eigen::Vector3d& line_start, Eigen::Vector3d& line_end, 
+                           Eigen::Vector3d& intersection_1, Eigen::Vector3d& intersection_2) {
+
+            // Solution : http://www.gamedev.net/community/forums/topic.asp?topic_id=467789
+            Eigen::Vector3d line_dir = line_end - line_start; 
+            Eigen::Vector3d bias_dir = (this->node2->curPos - this->node1->curPos);
+            //double bias = 0.1*bias_dir.norm();
+            double bias = 0;
+            bias_dir.normalize();
+            Eigen::Vector3d A = this->node1->curPos + bias*bias_dir;
+            Eigen::Vector3d B = this->node2->curPos - bias*bias_dir;
+
+            Eigen::Vector3d nan_bias1(1e-10, -1e-10, 1e-10);
+            Eigen::Vector3d nan_bias2(-1e-10, 1e-10, -1e-10);
+            Eigen::Vector3d AB = (B - A)+nan_bias1;
+            Eigen::Vector3d AO = (line_start - A)+nan_bias2;
+            Eigen::Vector3d AOxAB = AO.cross(AB);
+            Eigen::Vector3d VxAB  = line_dir.cross(AB);
+            double ab2 = AB.dot(AB);
+            double a = VxAB.dot(VxAB);
+            double b = 2 * VxAB.dot(AOxAB);
+            double c = AOxAB.dot(AOxAB) - (r*r * ab2);
+            double d = b*b - 4*a*c;
+            if (d < 0) 
+                return false;
+            double t1 = (-b - sqrt(d)) / (2 * a);
+            double t2 = (-b + sqrt(d)) / (2 * a);
+            if (t1 < 0) 
+                return false;
+
+            intersection_1 = line_start + line_dir*t1; /// intersection point
+            intersection_2 = line_start + line_dir*t2; /// intersection point
+            Eigen::Vector3d projection = A + (AB.dot(intersection_1 - A) / ab2) * AB; /// intersection projected onto cylinder axis
+            if ((projection - A).norm() + (B - projection).norm() > AB.norm()) 
+                return false;
+
+            return true;
+        }
+
+        Sphere* node1;
+        Sphere* node2;
+        double r;
+};
+
 class Link {
     public:
         Sphere *s1, *s2;
         double const_dist;
 
-        virtual double constraints(){cout << "this should not be called" << endl;};
+        virtual double constraints(){return 0;};
 };
 
 class HardLink : public Link {
@@ -134,17 +229,19 @@ class HardLink : public Link {
         }
 
         double constraints() {
-            Eigen::Vector3d vec = ((*s1).curPos - (*s2).curPos);
+            Eigen::Vector3d vec = ((*s2).curPos - (*s1).curPos);
             double magnitude = vec.norm();
-            double ext_dist = const_dist - magnitude;
+            double ext_dist = magnitude - const_dist;
             // lighter objects move further
-            double weight1 = 1.0 - (*s1).mass/((*s1).mass + (*s2).mass);
-            double weight2 = 1.0 - (*s2).mass/((*s1).mass + (*s2).mass);
+            double weight1 = fmax(1.0 - (*s1).mass/((*s1).mass + (*s2).mass), 1e-5);
+            double weight2 = fmax(1.0 - (*s2).mass/((*s1).mass + (*s2).mass), 1e-5);
             if (abs(ext_dist) > 1e-5) {
                 Eigen::Vector3d s1s2 = vec.normalized();
-                Eigen::Vector3d s2s1 = (-vec).normalized();
+                Eigen::Vector3d s2s1 = -(vec.normalized());
                 (*s1).curPos = (*s1).curPos + weight1*ext_dist*s1s2;
                 (*s2).curPos = (*s2).curPos + weight2*ext_dist*s2s1;
+                (*s1).oldPos = (*s1).oldPos + weight1*ext_dist*s1s2;
+                (*s2).oldPos = (*s2).oldPos + weight2*ext_dist*s2s1;
             }
             return ext_dist;
         }
@@ -153,8 +250,9 @@ class HardLink : public Link {
 class ParticleSystem {
     public:
         vector <Sphere*> SS;
-        double dtimestep;
         vector <Link*> LL;
+        vector <Cylinder*> CC;
+        double dtimestep;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -222,7 +320,9 @@ void ParticleSystem::Verlet () {
 
 void ParticleSystem::TimeStep() {
     Verlet();
-    SatisfyConstraints();
+    for (int i = 0; i < 10; i++){
+        SatisfyConstraints();
+    }
 }
 
 void ParticleSystem::SatisfyConstraints() {
@@ -237,6 +337,11 @@ void ParticleSystem::SatisfyConstraints() {
     for (si = SS.begin(); si != SS.end(); ++si) {
         (*si)->constraints(box_corner, box_corner+box_dims, SS);
     }
+
+    for (int i = 0; i < CC.size(); i++){
+        CC[i]->constraints(CC, i);
+    }
+
     vector<Link*>::iterator li;
     double ext_dist = -1;
     while (abs(ext_dist) > 1e-5){
@@ -244,7 +349,6 @@ void ParticleSystem::SatisfyConstraints() {
         for (li = LL.begin(); li != LL.end(); ++li) {
             ext_dist = fmax(ext_dist, (*li)->constraints());
         }
-        //cout << ext_dist << endl;
     }
 }
 
