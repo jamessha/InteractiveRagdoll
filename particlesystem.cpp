@@ -224,6 +224,8 @@ class SoftAngle : public Angle {
             Eigen::Vector3d up = s2s3.cross(v2);
             //Calculated using the dotproduct
             double orientation = up.dot(v2);
+            //use dotproduct cosine relation to find angle (in degrees), unfortunately limited to 0-180 degrees so need
+            //to use up vector (calculated above) to enlarge to 360 degrees.
             double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
             if ( orientation < 0 ) {
                 angle = angle + 180;
