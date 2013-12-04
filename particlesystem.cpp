@@ -176,6 +176,8 @@ class SoftAngle : public Angle {
         SoftAngle() {}
 
         SoftAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link * l5, double angle) {
+            //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
+            //into the above diagram.
             if (l1->s1 == l2->s1) {
                 this->s1 = l1->s1;
                 this->s2 = l1->s2;
@@ -207,7 +209,7 @@ class SoftAngle : public Angle {
         }
 
         void constraints() {
-            //Variables for max angle calculation
+            //Variables for max angle position
             Eigen::Vector3d maxPos;
             Eigen::Matrix3d rotation;
             Eigen::Vector3d diff;
