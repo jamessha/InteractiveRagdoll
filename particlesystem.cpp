@@ -150,11 +150,109 @@ class HardLink : public Link {
         }
 };
 
+class Angle {
+    /*              s4
+                    /\
+               L5  /  \  L4
+                s2/____\s3
+                  \ L3 /
+               L1  \  /  L2
+                    \/
+                    s1
+        Create an angle constraint as shown above
+        The diagram above is 180 degrees.
+        Rotate right hand rule around vector (s2-s3).
+    */
+    public:
+        Sphere *s1, *s2, *s3, *s4;
+        Eigen::Vector3d maxPos;
+        double const_angle;
+
+        virtual void constraints(){cout << "this should not be called" << endl;};
+};
+
+class SoftAngle : public Angle {
+    public:
+        SoftAngle() {}
+
+        SoftAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link * l5, double angle) {
+            //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
+            //into the above diagram.
+            if (l1->s1 == l2->s1) {
+                this->s1 = l1->s1;
+                this->s2 = l1->s2;
+                this->s3 = l2->s2;
+            } else if (l1->s1 == l2->s2) {
+                this->s1 = l1->s1;
+                this->s2 = l1->s2;
+                this->s3 = l2->s1;
+            } else if (l1->s2 == l2->s1) {
+                this->s1 = l1->s2;
+                this->s2 = l1->s1;
+                this->s3 = l2->s2;
+            } else if (l1->s2 == l2->s2) {
+                this->s1 = l1->s2;
+                this->s2 = l1->s1;
+                this->s3 = l2->s1;
+            }
+            if (l4->s1 == l5->s1) {
+                this->s4 = l4->s1;
+            } else if (l4->s1 == l5->s2) {
+                this->s4 = l4->s1;
+            } else if (l4->s2 == l5->s1) {
+                this->s4 = l4->s2;
+            } else if (l4->s2 == l5->s2) {
+                this->s4 = l4->s2;
+            }
+
+            this->const_angle = angle;
+        }
+
+        void constraints() {
+            //Variables for max angle position
+            Eigen::Vector3d maxPos;
+            Eigen::Matrix3d rotation;
+            Eigen::Vector3d diff;
+            double cosa, sina, mcosa, msina;
+
+
+            Eigen::Vector3d hingeCenter = (s2->curPos + s3->curPos)/2;
+            Eigen::Vector3d s2s3 = (s2->curPos - s3->curPos).normalized();
+            Eigen::Vector3d v1 = s4->curPos - hingeCenter;
+            Eigen::Vector3d v2 = s1->curPos - hingeCenter;
+            //Need the up vector to enlarge to 360 degrees
+            Eigen::Vector3d up = s2s3.cross(v2);
+            //Calculated using the dotproduct
+            double orientation = up.dot(v2);
+            //use dotproduct cosine relation to find angle (in degrees), unfortunately limited to 0-180 degrees so need
+            //to use up vector (calculated above) to enlarge to 360 degrees.
+            double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
+            if ( orientation < 0 ) {
+                angle = angle + 180;
+            }
+            if (angle > const_angle && (v1.normalized() != v2.normalized())) {
+                //See Wikipedia for arbitrary axis rotation matrix
+                cosa = cos(const_angle); sina = sin(const_angle); mcosa = 1 - cosa; msina = 1 - sina;
+                rotation << 
+                    cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
+                    s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
+                    s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                maxPos = rotation * s1->curPos;
+                diff = maxPos - s4->curPos;
+                s4->curPos = maxPos;
+                s4->oldPos = s4->oldPos + diff;
+            }
+        }
+
+
+};
+
 class ParticleSystem {
     public:
         vector <Sphere*> SS;
         double dtimestep;
         vector <Link*> LL;
+        vector <Angle*> AA;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -175,6 +273,7 @@ class ParticleSystem {
         void addSphere(Sphere& s);
         //void removeSphere(Sphere s);
         void addLink(Link& l);
+        void addAngle(Angle& a);
         void zeroParticleAcc();
         void TimeStep();
         void Verlet();
@@ -188,6 +287,10 @@ void ParticleSystem::addSphere(Sphere& s) {
 
 void ParticleSystem::addLink(Link& l) {
     LL.push_back(&l);
+}
+
+void ParticleSystem::addAngle(Angle& a) {
+    AA.push_back(&a);
 }
 
 void ParticleSystem::zeroParticleAcc(){
@@ -245,6 +348,9 @@ void ParticleSystem::SatisfyConstraints() {
             ext_dist = fmax(ext_dist, (*li)->constraints());
         }
         //cout << ext_dist << endl;
+    }
+    for (ai = AA.begin(); ai != AA.end(); ++ai) {
+        (*ai)->constraints();
     }
 }
 
