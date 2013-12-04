@@ -229,7 +229,7 @@ class SoftAngle : public Angle {
                 angle = angle + 180;
             }
             if (angle > const_angle && (v1.normalized() != v2.normalized())) {
-                //See Wikipedia for any axis rotation matrix
+                //See Wikipedia for arbitrary axis rotation matrix
                 cosa = cos(const_angle); sina = sin(const_angle); mcosa = 1 - cosa; msina = 1 - sina;
                 rotation << 
                     cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
