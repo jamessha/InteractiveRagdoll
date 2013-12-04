@@ -101,75 +101,35 @@ void myKeys(unsigned char key, int x, int y) {
 		exit(0);
 		break;
 	case W_KEY:
-		cam_pos_x += double(sin(cam_rot_y/180 * PI));
-		cam_pos_y += double(sin(cam_rot_x/180 * PI));
-		cam_pos_z += double(cos(cam_rot_y/180 * PI));
+		cam_pos_x += double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z += double(cos(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case A_KEY:
 		cam_pos_x -= double(cos(cam_rot_y/180 * PI)) * 0.2;
 		cam_pos_z -= double(sin(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case S_KEY:
-		cam_pos_x -= double(sin(cam_rot_y/180 * PI));
-		cam_pos_y += double(sin(cam_rot_x/180 * PI));
-		cam_pos_z += double(cos(cam_rot_y/180 * PI));
+		cam_pos_x -= double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z -= double(cos(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case D_KEY:
 		cam_pos_x += double(cos(cam_rot_y/180 * PI)) * 0.2;
 		cam_pos_z += double(sin(cam_rot_y/180 * PI)) * 0.2;
 		break;
-		/*	case W_KEY:
-		if (cam_pos_z > -9) cam_pos_z-=0.3;
-		cout << "z: " << cam_pos_z << "\n";
-		break;
-	case S_KEY:
-		if (cam_pos_z <  9) cam_pos_z+=0.3;
-		cout << "z: " << cam_pos_z << "\n";
-		break;
-	case A_KEY:
-		if (cam_pos_x > -9) cam_pos_x-=0.3;
-		cout << "x: " << cam_pos_x << "\n";
-		break;
-	case D_KEY:
-		if (cam_pos_x <  9) cam_pos_x+=0.3;
-		cout << "x: " << cam_pos_x << "\n";
-		break;*/
 	}
-	cout << "----------------------\n";
-	
 	glutPostRedisplay();
 }
 
 // function that handles special key events
 void mySpecial(int key, int x, int y) {
 	int modifier = glutGetModifiers();
-	/*	switch(key) {
-	case GLUT_KEY_RIGHT:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x -= 0.1;
-        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x += 5;
-        else cam_rotate_y += 5;
-		break;
-	case GLUT_KEY_LEFT:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x += 0.1;
-        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x -= 5;
-        else cam_rotate_y -= 5;
-		break;
-	case GLUT_KEY_UP:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y -= 0.1;
-        else cam_rotate_z += 5;
-		break;
-	case GLUT_KEY_DOWN:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y += 0.1;
-        else cam_rotate_z -= 5;
-		break;
-		}*/
 	glutPostRedisplay();
 }
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	cam_rot_x += (double) x - prev_x;
-	cam_rot_y += (double) y - prev_y;
+	cam_rot_y += (double) x - prev_x;
+	cam_rot_x += (double) y - prev_y;
 	prev_x = x;
 	prev_y = y;
 }

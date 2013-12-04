@@ -349,7 +349,7 @@ void ParticleSystem::SatisfyConstraints() {
         }
         //cout << ext_dist << endl;
     }
-    for (ai = AA.begin(); ai != AA.end(); ++ai) {
+    for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
         (*ai)->constraints();
     }
 }
