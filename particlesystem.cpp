@@ -160,7 +160,8 @@ class Angle {
                     \/
                     s1
         Create an angle constraint as shown above
-        The diagram above is 180 degrees. Rotate towards you is NEGATIVE.
+        The diagram above is 180 degrees.
+        Rotate right hand rule around vector (s2-s3).
     */
     public:
         Sphere *s1, *s2, *s3, *s4;
