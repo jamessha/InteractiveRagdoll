@@ -207,10 +207,13 @@ class SoftAngle : public Angle {
         }
 
         void constraints() {
+            //Variables for max angle calculation
             Eigen::Vector3d maxPos;
             Eigen::Matrix3d rotation;
             Eigen::Vector3d diff;
             double cosa, sina, mcosa, msina;
+
+
             Eigen::Vector3d hingeCenter = (s2->curPos + s3->curPos)/2;
             Eigen::Vector3d s2s3 = (s2->curPos - s3->curPos).normalized();
             Eigen::Vector3d v1 = s4->curPos - hingeCenter;
