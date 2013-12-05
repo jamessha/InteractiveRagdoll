@@ -129,6 +129,9 @@ class Cylinder{
 
         void constraints(vector<Cylinder*>& body_parts, int idx){
             for (int i = 0; i < body_parts.size(); i++){
+                if (i == idx)
+                    continue;
+
                 Eigen::Vector3d intersect_1;
                 Eigen::Vector3d intersect_2;
                 bool did_intersect = body_parts[i]->LineIntersect(this->node1->curPos, this->node2->curPos, intersect_1, intersect_2);
@@ -137,9 +140,17 @@ class Cylinder{
 
                 Eigen::Vector3d intersect_mid = (intersect_1 + intersect_2)/2;
                 //double dist = PointLineSegDist(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_mid);
-                Eigen::Vector3d mid_proj = ProjPointLineSeg(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_mid);
+                Eigen::Vector3d mid_proj = ProjPointLineSeg(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_1);
                 double dist = (intersect_mid - mid_proj).norm();
                 double ext_dist = body_parts[i]->r - dist;
+                ext_dist = body_parts[i]->r;
+                //cout << intersect_1.transpose() << endl;
+                //cout << intersect_2.transpose() << endl;
+                //cout << intersect_mid.transpose() << endl;
+                //cout << mid_proj.transpose() << endl;
+                //cout << dist << endl;
+                //cout << ext_dist << endl << endl;
+                //continue;
 
                 if (ext_dist < 0) // Numerical problems?
                     continue;
@@ -199,7 +210,7 @@ class Cylinder{
             intersection_1 = line_start + line_dir*t1; /// intersection point
             intersection_2 = line_start + line_dir*t2; /// intersection point
             Eigen::Vector3d projection = A + (AB.dot(intersection_1 - A) / ab2) * AB; /// intersection projected onto cylinder axis
-            if ((projection - A).norm() + (B - projection).norm() > AB.norm()) 
+            if ((projection - A).norm() + (B - projection).norm() > AB.norm() + 1e-5) 
                 return false;
 
             return true;
