@@ -131,30 +131,24 @@ class Cylinder{
             for (int i = 0; i < body_parts.size(); i++){
                 if (i == idx)
                     continue;
+    
+                double bias = fmax(this->r, body_parts[i]->r)/2;
 
-                Eigen::Vector3d intersect_1;
-                Eigen::Vector3d intersect_2;
-                bool did_intersect = body_parts[i]->LineIntersect(this->node1->curPos, this->node2->curPos, intersect_1, intersect_2);
-                if (!did_intersect)
+                Eigen::Vector3d curr_part_dir = (this->node2->curPos - this->node1->curPos).normalized();
+                Eigen::Vector3d curr_part_node_1 = this->node1->curPos + bias*curr_part_dir;
+                Eigen::Vector3d curr_part_node_2 = this->node2->curPos - bias*curr_part_dir;
+
+                Eigen::Vector3d query_part_dir = (body_parts[i]->node2->curPos - body_parts[i]->node1->curPos).normalized();
+                Eigen::Vector3d query_part_node_1 = body_parts[i]->node1->curPos + bias*query_part_dir;
+                Eigen::Vector3d query_part_node_2 = body_parts[i]->node2->curPos - bias*query_part_dir;
+                
+                double closest_dist = Seg2SegDist(curr_part_node_1, curr_part_node_2, query_part_node_1, query_part_node_2);
+
+                if (closest_dist > r)
                     continue;
-
-                Eigen::Vector3d intersect_mid = (intersect_1 + intersect_2)/2;
-                //double dist = PointLineSegDist(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_mid);
-                Eigen::Vector3d mid_proj = ProjPointLineSeg(body_parts[i]->node1->curPos, body_parts[i]->node2->curPos, intersect_1);
-                double dist = (intersect_mid - mid_proj).norm();
-                double ext_dist = body_parts[i]->r - dist;
-                ext_dist = body_parts[i]->r;
-                //cout << intersect_1.transpose() << endl;
-                //cout << intersect_2.transpose() << endl;
-                //cout << intersect_mid.transpose() << endl;
-                //cout << mid_proj.transpose() << endl;
-                //cout << dist << endl;
-                //cout << ext_dist << endl << endl;
-                //continue;
-
-                if (ext_dist < 0) // Numerical problems?
-                    continue;
-
+               
+                double ext_dist = r - closest_dist;
+                
                 Eigen::Vector3d old_mid = (this->node1->oldPos + this->node2->oldPos)/2;
                 Eigen::Vector3d cur_mid = (this->node1->curPos + this->node2->curPos)/2;
                 // Hacks to get rid of nans

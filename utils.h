@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 
 using namespace Eigen;
+using namespace std;
 
 Matrix4f Rodrigues(double x, double y, double z, double theta_deg){
 	Matrix4f matrix = Matrix4f::Identity();
@@ -145,4 +146,82 @@ Eigen::Vector3d ProjPointLineSeg(Eigen::Vector3d s1, Eigen::Vector3d s2, Eigen::
     Eigen::Vector3d proj = s1 + b*v;
     
     return proj;
+}
+
+// Adapted from http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment
+double Seg2SegDist(Eigen::Vector3d& s1p1, Eigen::Vector3d& s1p2, Eigen::Vector3d& s2p1, Eigen::Vector3d& s2p2){
+    Eigen::Vector3d u = s1p2 - s1p1;
+    Eigen::Vector3d v = s2p2 - s2p1;
+    Eigen::Vector3d w = s1p1 - s2p1;
+
+    //cout << s1p1.transpose() << endl;
+    //cout << s2p1.transpose() << endl;
+    //cout << w.transpose() << endl;
+
+    double a = u.dot(u);
+    double b = u.dot(v);
+    double c = v.dot(v);
+    double d = u.dot(w);
+    double e = v.dot(w);
+    double D = a*c - b*b;
+    double sc = D, sN = D, sD = D;
+    double tc = D, tN = D, tD = D;
+    
+    if (D < 1e-5){ // Parallel lines
+        sN = 0.0;
+        sD = 1.0;
+        tN = e;
+        tD = c;
+    } else { // Closest point on infinite lines
+        sN = (b*e - c*d);
+        tN = (a*e - b*d);
+        if (sN < 0.0){ // sc < 0 => s=0 edge visible
+            sN = 0.0;
+            tN = e;
+            tD = c;
+        } else if (sN > sD) { // sc > 1 => s=1 edge is visible
+            sN = sD;
+            tN = e + b;
+            tD = c;
+        } 
+    } 
+
+    if (tN < 0.0){ // tc < 0 => t=0 edge is visible
+        tN = 0.0;
+        // recompute sc for edge
+        if (-d < 0.0)
+            sN = 0.0;
+        else if (-d > a)
+            sN = sD;
+        else {
+            sN = -d;
+            sD = a;
+        } 
+    } else if (tN > tD) { // tc > 1 => t=1 edge is visible
+        tN = tD;
+        // recompute sc for edge
+        if ((-d+b) < 0.0)
+            sN = 0;
+        else if ((-d+b) > a)
+            sN = sD;
+        else {
+            sN = (-d+b);
+            sD = a;
+        } 
+    } 
+
+    // division to get sc and tc
+    if (abs(sN) < 1e-5)
+        sc = 0.0;
+    else
+        sc = sN/sD;
+
+    if (abs(tN) < 1e-5)
+        tc = 0.0;
+    else
+        tc = tN/tD;
+    
+    Eigen::Vector3d dP = w + (sc*u) - (tc*v); // = S1(sc) - S2(tc)
+
+    return dP.norm();
 }

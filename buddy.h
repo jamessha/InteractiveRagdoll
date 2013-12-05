@@ -85,35 +85,33 @@ class Buddy{
             this->limbs.push_back(l_tibia);
             this->limbs.push_back(r_tibia);
 
-            //this->body_parts.push_back(head_part);
-            //this->body_parts.push_back(body_part);
-            //this->body_parts.push_back(l_humerus_part);
-            //this->body_parts.push_back(r_humerus_part);
-            //this->body_parts.push_back(l_ulna_part);
-            //this->body_parts.push_back(r_ulna_part);
-            //this->body_parts.push_back(l_femur_part);
-            //this->body_parts.push_back(r_femur_part);
-            //this->body_parts.push_back(l_tibia_part);
-            //this->body_parts.push_back(r_tibia_part);
+            this->body_parts.push_back(head_part);
+            this->body_parts.push_back(body_part);
+            this->body_parts.push_back(l_humerus_part);
+            this->body_parts.push_back(r_humerus_part);
+            this->body_parts.push_back(l_ulna_part);
+            this->body_parts.push_back(r_ulna_part);
+            this->body_parts.push_back(l_femur_part);
+            this->body_parts.push_back(r_femur_part);
+            this->body_parts.push_back(l_tibia_part);
+            this->body_parts.push_back(r_tibia_part);
            
-            Sphere* test_s1 = new Sphere(0, 0, 0, 0.1, 1);
-            Sphere* test_s2 = new Sphere(1, 0, 0, 0.1, 1);
-            Cylinder* test_1 = new Cylinder(test_s1, test_s2, 0.25);
-            Sphere* test_s3 = new Sphere(0, 0.6, 0, 0.1, 1);
-            Sphere* test_s4 = new Sphere(1, 0.5, 0, 0.1, 1);
-            Cylinder* test_2 = new Cylinder(test_s3, test_s4, 0.25);
-            HardLink* l1 = new HardLink(test_s1, test_s2);
-            HardLink* l2 = new HardLink(test_s3, test_s4);
-            this->body_parts.push_back(test_1);
-            this->body_parts.push_back(test_2);
-            this->body_parts.push_back(test_1);
-            this->body_parts.push_back(test_2);
-            this->joints.push_back(test_s1);
-            this->joints.push_back(test_s2);
-            this->joints.push_back(test_s3);
-            this->joints.push_back(test_s4);
-            this->limbs.push_back(l1);
-            this->limbs.push_back(l2);
+            //Sphere* test_s1 = new Sphere(0, 0, 0, 0.1, 1);
+            //Sphere* test_s2 = new Sphere(1, 0, 0, 0.1, 1);
+            //Cylinder* test_1 = new Cylinder(test_s1, test_s2, 0.25);
+            //Sphere* test_s3 = new Sphere(0, 0.6, 0, 0.1, 1);
+            //Sphere* test_s4 = new Sphere(1, 0.5, 0, 0.1, 1);
+            //Cylinder* test_2 = new Cylinder(test_s3, test_s4, 0.25);
+            //HardLink* l1 = new HardLink(test_s1, test_s2);
+            //HardLink* l2 = new HardLink(test_s3, test_s4);
+            //this->body_parts.push_back(test_1);
+            //this->body_parts.push_back(test_2);
+            //this->joints.push_back(test_s1);
+            //this->joints.push_back(test_s2);
+            //this->joints.push_back(test_s3);
+            //this->joints.push_back(test_s4);
+            //this->limbs.push_back(l1);
+            //this->limbs.push_back(l2);
 
 		}
 
