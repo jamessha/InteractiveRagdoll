@@ -27,32 +27,21 @@
 
 #include "buddy.h"
 
-// Fuck Ubuntu 13.10 
+// Fuck Ubuntu 13.10 <- lolol
 #include <pthread.h>
 void junk(){
     int i;
     i = pthread_getconcurrency();
 };
 
-#define SPACEBAR 32
 #define ESCAPE 27
-#define S_KEY 115
 #define W_KEY 119
-#define H_KEY 104
-#define Q_KEY 113
-#define N_KEY 110
-#define PLUS_KEY  43
-#define EQUALS_KEY  61
-#define MINUS_KEY 45
-#define ONE_KEY 49
-#define TWO_KEY 50
-#define THREE_KEY 51
-#define FOUR_KEY 52
-#define FIVE_KEY 53
-#define SIX_KEY 54
-#define SEVEN_KEY 55
-#define EIGHT_KEY 56
-#define NINE_KEY 57
+#define A_KEY  97
+#define S_KEY 115
+#define D_KEY 100
+#define SPACEBAR 32
+
+#define PI 3.14159265
 //#define GL_GLEXT_PROTOTYPES
 inline float sqr(float x) { return x*x; }
 
@@ -67,12 +56,9 @@ class Viewport {
 Viewport viewport;
 int windowID;
 
-double cam_rotate_x;
-double cam_rotate_y;
-double cam_rotate_z;
-double cam_translate_x;
-double cam_translate_y;
-double cam_translate_z;
+double cam_rot_x = 0, cam_rot_y = 0;
+double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
+double prev_x, prev_y;
 bool perspective;
 
 Buddy buddy;
@@ -114,40 +100,38 @@ void myKeys(unsigned char key, int x, int y) {
 		glutDestroyWindow(windowID);
 		exit(0);
 		break;
-	case Q_KEY:
-		glutDestroyWindow(windowID);
-		exit(0);
+	case W_KEY:
+		cam_pos_x += double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z += double(cos(cam_rot_y/180 * PI)) * 0.2;
 		break;
-	case SPACEBAR: 
+	case A_KEY:
+		cam_pos_x -= double(cos(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z -= double(sin(cam_rot_y/180 * PI)) * 0.2;
 		break;
-    }
+	case S_KEY:
+		cam_pos_x -= double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z -= double(cos(cam_rot_y/180 * PI)) * 0.2;
+		break;
+	case D_KEY:
+		cam_pos_x += double(cos(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z += double(sin(cam_rot_y/180 * PI)) * 0.2;
+		break;
+	}
 	glutPostRedisplay();
 }
 
 // function that handles special key events
 void mySpecial(int key, int x, int y) {
 	int modifier = glutGetModifiers();
-	switch(key) {
-	case GLUT_KEY_RIGHT:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x -= 0.1;
-        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x += 5;
-        else cam_rotate_y += 5;
-		break;
-	case GLUT_KEY_LEFT:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_x += 0.1;
-        else if (modifier == GLUT_ACTIVE_CTRL) cam_rotate_x -= 5;
-        else cam_rotate_y -= 5;
-		break;
-	case GLUT_KEY_UP:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y -= 0.1;
-        else cam_rotate_z += 5;
-		break;
-	case GLUT_KEY_DOWN:
-        if (modifier == GLUT_ACTIVE_SHIFT) cam_translate_y += 0.1;
-        else cam_rotate_z -= 5;
-		break;
-	}
 	glutPostRedisplay();
+}
+
+// function that handles mouse movement
+void myMouse(int x, int y) {
+	cam_rot_y += (double) x - prev_x;
+	cam_rot_x += (double) y - prev_y;
+	prev_x = x;
+	prev_y = y;
 }
 
 // reshape viewport if the window is resized
@@ -220,25 +204,23 @@ void myDisplay() {
     gluPerspective(120.0, 1.0, 1.0, 50.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0.0, 0.0, 20.0, // lookfrom
+    gluLookAt(0.0, 0.0, -9.0, // lookfrom
               0.0, 0.0,  0.0, // lookat
               0.0, 1.0,  0.0); // up
 
+	glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, white);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  white);
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-    glRotatef(cam_rotate_x, 1.0, 0.0, 0.0);
-    glRotatef(cam_rotate_y, 0.0, 1.0, 0.0);
-    glRotatef(cam_rotate_z, 0.0, 0.0, 1.0);
-    glTranslatef(cam_translate_x,
-                 cam_translate_y,
-                 cam_translate_z);
-
+    glRotatef(cam_rot_x, 1.0, 0.0, 0.0);
+    glRotatef(cam_rot_y, 0.0, 1.0, 0.0);
+    glTranslatef(cam_pos_x, cam_pos_y, cam_pos_z);
+	
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
@@ -273,13 +255,14 @@ int main(int argc, char *argv[]) {
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 
     glutInitWindowSize(viewport.w, viewport.h);
-    glutInitWindowPosition(0,0);
+    glutInitWindowPosition(100, 100);
 	windowID = glutCreateWindow("Interactive Buddy");
 
 	glutKeyboardFunc(myKeys);               // function to run when keys presses occur
 	glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
     glutReshapeFunc(myReshape);				// function to run when the window gets resized
     glutDisplayFunc(myDisplay);				// function to run when its time to draw something
+	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
 
 	glEnable(GL_DEPTH_TEST);                // enable z-buffer depth test
 	glShadeModel(GL_SMOOTH);
