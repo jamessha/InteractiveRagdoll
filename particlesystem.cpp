@@ -65,28 +65,34 @@ class Sphere {
             double maxz = up[2] - radius;
 
             if (x < minx) {
+                double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = (minx - curPos[0]) + minx;
-                oldPos[0] = minx - (oldPos[0] - minx);
+                oldPos[0] = curPos[0] + 0.2*x_dist;
             }
             if (x > maxx) {
+                double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = maxx - (curPos[0] - maxx);
-                oldPos[0] = (maxx - oldPos[0]) + maxx;           
+                oldPos[0] = curPos[0] + 0.2*x_dist;
             }
             if (y < miny) {
+                double y_dist = curPos[1] - oldPos[1];
                 curPos[1] = (miny - curPos[1]) + miny;
-                oldPos[1] = miny - (oldPos[1] - miny);
+                oldPos[1] = curPos[1] + 0.2*y_dist;
             }
             if (y > maxy) {
-               curPos[1] = maxy - (curPos[1] - maxy);
-                oldPos[1] = (maxy - oldPos[1]) + maxy;            
+                double y_dist = curPos[1] - oldPos[1];
+                curPos[1] = maxy - (curPos[1] - maxy);
+                oldPos[1] = curPos[1] + 0.2*y_dist;
             }
             if (z < minz) {
+                double z_dist = curPos[2] - oldPos[2];
                 curPos[2] = (minz - curPos[2]) + minz;
-                oldPos[2] = minz - (oldPos[2] - minz);
+                oldPos[2] = curPos[2] + 0.2*z_dist;
             }
             if (z > maxz) {
-               curPos[2] = maxz - (curPos[2] - maxz);
-                oldPos[2] = (maxz - oldPos[2]) + maxz;             
+                double z_dist = curPos[2] - oldPos[2];
+                curPos[2] = maxz - (curPos[2] - maxz);
+                oldPos[2] = curPos[2] + 0.2*z_dist;
             }
         }
 
@@ -132,7 +138,7 @@ class Cylinder{
                 if (i == idx)
                     continue;
     
-                double bias = fmax(this->r, body_parts[i]->r)/2;
+                double bias = fmax(this->r, body_parts[i]->r);
 
                 Eigen::Vector3d curr_part_dir = (this->node2->curPos - this->node1->curPos).normalized();
                 Eigen::Vector3d curr_part_node_1 = this->node1->curPos + bias*curr_part_dir;
@@ -141,7 +147,7 @@ class Cylinder{
                 Eigen::Vector3d query_part_dir = (body_parts[i]->node2->curPos - body_parts[i]->node1->curPos).normalized();
                 Eigen::Vector3d query_part_node_1 = body_parts[i]->node1->curPos + bias*query_part_dir;
                 Eigen::Vector3d query_part_node_2 = body_parts[i]->node2->curPos - bias*query_part_dir;
-                
+               
                 double closest_dist = Seg2SegDist(curr_part_node_1, curr_part_node_2, query_part_node_1, query_part_node_2);
 
                 if (closest_dist > r)
@@ -161,8 +167,8 @@ class Cylinder{
                 this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
                 this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
                 // Set oldPos to backside
-                this->node1->oldPos = this->node1->curPos - (dist_travelled - ext_dist)*ref_dir;
-                this->node2->oldPos = this->node2->curPos - (dist_travelled - ext_dist)*ref_dir;
+                this->node1->oldPos = this->node1->curPos - 0.0*(dist_travelled - ext_dist)*ref_dir;
+                this->node2->oldPos = this->node2->curPos - 0.0*(dist_travelled - ext_dist)*ref_dir;
                 // Reflect curPos
                 this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
                 this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
