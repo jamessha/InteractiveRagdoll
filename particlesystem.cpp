@@ -68,31 +68,61 @@ class Sphere {
                 double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = (minx - curPos[0]) + minx;
                 oldPos[0] = curPos[0] + 0.2*x_dist;
+                // Degrade other motion from friction
+                double y_dir = curPos[1] - oldPos[1];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[1] = curPos[1] - 0.5*y_dir;
+                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (x > maxx) {
                 double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = maxx - (curPos[0] - maxx);
                 oldPos[0] = curPos[0] + 0.2*x_dist;
+                // Degrade other motion from friction
+                double y_dir = curPos[1] - oldPos[1];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[1] = curPos[1] - 0.5*y_dir;
+                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (y < miny) {
                 double y_dist = curPos[1] - oldPos[1];
                 curPos[1] = (miny - curPos[1]) + miny;
                 oldPos[1] = curPos[1] + 0.2*y_dist;
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[0] = curPos[0] - 0.5*x_dir;
+                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (y > maxy) {
                 double y_dist = curPos[1] - oldPos[1];
                 curPos[1] = maxy - (curPos[1] - maxy);
                 oldPos[1] = curPos[1] + 0.2*y_dist;
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[0] = curPos[0] - 0.5*x_dir;
+                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (z < minz) {
                 double z_dist = curPos[2] - oldPos[2];
                 curPos[2] = (minz - curPos[2]) + minz;
                 oldPos[2] = curPos[2] + 0.2*z_dist;
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double y_dir = curPos[1] - oldPos[1];
+                oldPos[0] = curPos[0] - 0.5*x_dir;
+                oldPos[1] = curPos[1] - 0.5*y_dir;
             }
             if (z > maxz) {
                 double z_dist = curPos[2] - oldPos[2];
                 curPos[2] = maxz - (curPos[2] - maxz);
                 oldPos[2] = curPos[2] + 0.2*z_dist;
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double y_dir = curPos[1] - oldPos[1];
+                oldPos[0] = curPos[0] - 0.5*x_dir;
+                oldPos[1] = curPos[1] - 0.5*y_dir;
             }
         }
 
@@ -138,84 +168,53 @@ class Cylinder{
                 if (i == idx)
                     continue;
     
-                double bias = fmax(this->r, body_parts[i]->r);
+                double bias = fmin(this->r, body_parts[i]->r);
 
                 Eigen::Vector3d curr_part_dir = (this->node2->curPos - this->node1->curPos).normalized();
-                Eigen::Vector3d curr_part_node_1 = this->node1->curPos + bias*curr_part_dir;
-                Eigen::Vector3d curr_part_node_2 = this->node2->curPos - bias*curr_part_dir;
+                //cout << (this->node2->curPos - this->node1->curPos).norm() << endl;
+                Eigen::Vector3d curr_part_node_1 = this->node1->curPos + 1.05*bias*curr_part_dir;
+                Eigen::Vector3d curr_part_node_2 = this->node2->curPos - 1.05*bias*curr_part_dir;
 
-                Eigen::Vector3d query_part_dir = (body_parts[i]->node2->curPos - body_parts[i]->node1->curPos).normalized();
-                Eigen::Vector3d query_part_node_1 = body_parts[i]->node1->curPos + bias*query_part_dir;
-                Eigen::Vector3d query_part_node_2 = body_parts[i]->node2->curPos - bias*query_part_dir;
-               
-                double closest_dist = Seg2SegDist(curr_part_node_1, curr_part_node_2, query_part_node_1, query_part_node_2);
+                double closest_dist = Seg2SegDist(curr_part_node_1, curr_part_node_2, body_parts[i]->node1->curPos, body_parts[i]->node2->curPos);
+                //cout << closest_dist << " " << bias << endl;
 
-                if (closest_dist > r)
+                if (closest_dist > bias)
                     continue;
-               
+                //cout << "blah" << endl;
+                //exit(-1);
+
                 double ext_dist = r - closest_dist;
                 
-                Eigen::Vector3d old_mid = (this->node1->oldPos + this->node2->oldPos)/2;
-                Eigen::Vector3d cur_mid = (this->node1->curPos + this->node2->curPos)/2;
                 // Hacks to get rid of nans
-                old_mid(0) += 1e-10; old_mid(1) += 1e-10; old_mid(2) += 1e-10;
-                Eigen::Vector3d ref_dir = (old_mid - cur_mid).normalized();
+                Eigen::Vector3d nan_bias(1e-10, 1e-10, 1e-10);
 
-                double dist_travelled = (old_mid - cur_mid).norm(); 
-                //cout << dist_travelled << endl;
-                // Bring to surface of cylinder
-                this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
-                this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
-                // Set oldPos to backside
-                this->node1->oldPos = this->node1->curPos - 0.0*(dist_travelled - ext_dist)*ref_dir;
-                this->node2->oldPos = this->node2->curPos - 0.0*(dist_travelled - ext_dist)*ref_dir;
-                // Reflect curPos
-                this->node1->curPos = this->node1->curPos + ext_dist*ref_dir;
-                this->node2->curPos = this->node2->curPos + ext_dist*ref_dir;
+                Eigen::Vector3d this_old_mid = (this->node1->oldPos + this->node2->oldPos)/2;
+                Eigen::Vector3d this_cur_mid = (this->node1->curPos + this->node2->curPos)/2;
+                Eigen::Vector3d A = (this_cur_mid - this_old_mid + nan_bias);
+                double A_norm = (this_cur_mid - this_old_mid).norm(); 
+
+                // Other body part also gets moved
+                Eigen::Vector3d other_old_mid = (body_parts[i]->node1->oldPos + body_parts[i]->node2->oldPos)/2;
+                Eigen::Vector3d other_cur_mid = (body_parts[i]->node1->curPos + body_parts[i]->node2->curPos)/2;
+                Eigen::Vector3d B = (other_cur_mid - other_old_mid + nan_bias);
+                double B_norm = (other_cur_mid - other_old_mid).norm();
+                
+                // Some approximate math to get new directions
+                Eigen::Vector3d C = A+B;
+                Eigen::Vector3d D = this_cur_mid - other_cur_mid;
+                Eigen::Vector3d E = other_cur_mid - this_cur_mid;
+               
+                this->node1->curPos += D.normalized()*this->r;
+                this->node2->curPos += D.normalized()*this->r;
+                this->node1->oldPos = this->node1->curPos - 0.1*D;
+                this->node2->oldPos = this->node2->curPos - 0.1*D;
+                body_parts[i]->node1->curPos += E.normalized()*body_parts[i]->r;
+                body_parts[i]->node2->curPos += E.normalized()*body_parts[i]->r;
+                body_parts[i]->node1->oldPos = body_parts[i]->node1->curPos - 0.1*E;
+                body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - 0.1*E;
             }
         }
-
-        // Adapted from http://stackoverflow.com/questions/4078401/trying-to-optimize-line-vs-cylinder-intersection
-        // - line has starting point (x0, y0, z0) and ending point (x1, y1, z1) 
-        bool LineIntersect(Eigen::Vector3d& line_start, Eigen::Vector3d& line_end, 
-                           Eigen::Vector3d& intersection_1, Eigen::Vector3d& intersection_2) {
-
-            // Solution : http://www.gamedev.net/community/forums/topic.asp?topic_id=467789
-            Eigen::Vector3d line_dir = line_end - line_start; 
-            Eigen::Vector3d bias_dir = (this->node2->curPos - this->node1->curPos);
-            //double bias = 0.1*bias_dir.norm();
-            double bias = 0;
-            bias_dir.normalize();
-            Eigen::Vector3d A = this->node1->curPos + bias*bias_dir;
-            Eigen::Vector3d B = this->node2->curPos - bias*bias_dir;
-
-            Eigen::Vector3d nan_bias1(1e-10, -1e-10, 1e-10);
-            Eigen::Vector3d nan_bias2(-1e-10, 1e-10, -1e-10);
-            Eigen::Vector3d AB = (B - A)+nan_bias1;
-            Eigen::Vector3d AO = (line_start - A)+nan_bias2;
-            Eigen::Vector3d AOxAB = AO.cross(AB);
-            Eigen::Vector3d VxAB  = line_dir.cross(AB);
-            double ab2 = AB.dot(AB);
-            double a = VxAB.dot(VxAB);
-            double b = 2 * VxAB.dot(AOxAB);
-            double c = AOxAB.dot(AOxAB) - (r*r * ab2);
-            double d = b*b - 4*a*c;
-            if (d < 0) 
-                return false;
-            double t1 = (-b - sqrt(d)) / (2 * a);
-            double t2 = (-b + sqrt(d)) / (2 * a);
-            if (t1 < 0) 
-                return false;
-
-            intersection_1 = line_start + line_dir*t1; /// intersection point
-            intersection_2 = line_start + line_dir*t2; /// intersection point
-            Eigen::Vector3d projection = A + (AB.dot(intersection_1 - A) / ab2) * AB; /// intersection projected onto cylinder axis
-            if ((projection - A).norm() + (B - projection).norm() > AB.norm() + 1e-5) 
-                return false;
-
-            return true;
-        }
-
+        
         Sphere* node1;
         Sphere* node2;
         double r;
