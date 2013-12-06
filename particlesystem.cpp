@@ -201,17 +201,27 @@ class Cylinder{
                 
                 // Some approximate math to get new directions
                 Eigen::Vector3d C = A+B;
-                Eigen::Vector3d D = this_cur_mid - other_cur_mid;
-                Eigen::Vector3d E = other_cur_mid - this_cur_mid;
+                Eigen::Vector3d D = (this_cur_mid - other_cur_mid).normalized();
+                Eigen::Vector3d E = (other_cur_mid - this_cur_mid).normalized();
+
+                Eigen::Vector3d this_node1_v = ((this->node1->curPos - this->node1->oldPos).normalized() + 0.1*D).normalized();
+                double this_node1_mag = (this->node1->curPos - this->node1->oldPos).norm();
+                Eigen::Vector3d this_node2_v = ((this->node2->curPos - this->node2->oldPos).normalized() + 0.1*D).normalized();
+                double this_node2_mag = (this->node2->curPos - this->node2->oldPos).norm();
+                Eigen::Vector3d other_node1_v = ((body_parts[i]->node1->curPos - body_parts[i]->node1->oldPos).normalized() + 0.1*E).normalized();
+                double other_node1_mag = (body_parts[i]->node1->curPos - body_parts[i]->node1->oldPos).norm();
+                Eigen::Vector3d other_node2_v = ((body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).normalized() + 0.1*E).normalized();
+                double other_node2_mag = (body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).norm();
                
-                this->node1->curPos += D.normalized()*this->r;
-                this->node2->curPos += D.normalized()*this->r;
-                this->node1->oldPos = this->node1->curPos - 0.1*D;
-                this->node2->oldPos = this->node2->curPos - 0.1*D;
-                body_parts[i]->node1->curPos += E.normalized()*body_parts[i]->r;
-                body_parts[i]->node2->curPos += E.normalized()*body_parts[i]->r;
-                body_parts[i]->node1->oldPos = body_parts[i]->node1->curPos - 0.1*E;
-                body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - 0.1*E;
+
+                this->node1->curPos += D*this->r;
+                this->node2->curPos += D*this->r;
+                this->node1->oldPos = this->node1->curPos - this_node1_mag*this_node1_v;
+                this->node2->oldPos = this->node2->curPos - this_node2_mag*this_node2_v;
+                body_parts[i]->node1->curPos += E*body_parts[i]->r;
+                body_parts[i]->node2->curPos += E*body_parts[i]->r;
+                body_parts[i]->node1->oldPos = body_parts[i]->node1->curPos - other_node1_mag*other_node1_v;
+                body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - other_node2_mag*other_node2_v;
             }
         }
         
