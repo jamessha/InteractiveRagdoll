@@ -62,8 +62,14 @@ double cam_rot_x = 0, cam_rot_y = 0;
 double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
 bool perspective;
+Eigen::Vector3d bullet_start;
+Eigen::Vector3d bullet_start_draw;
+Eigen::Vector3d bullet_end;
+Eigen::Vector3d bullet_dir;
 bool fire_primary = false;
 bool fire_secondary = false;
+string primary = "laser";
+string secondary = "grenade";
 bool DEBUG;
 
 Buddy buddy;
@@ -213,10 +219,10 @@ void mySpecial(int key, int x, int y) {
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.1;
+	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.015;
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
-	cam_rot_y -= atan2((double) x-prev_x, 1)*0.1;
+	cam_rot_y -= atan2((double) x-prev_x, 1)*0.015;
 	prev_x = x;
 	prev_y = y;
 }
@@ -307,7 +313,7 @@ void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
 
-void drawCrosshairs(){
+void drawHUD(){
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -362,6 +368,23 @@ void drawAcc(){
 
 }
 
+void fireLaser(){
+    drawRay(bullet_start_draw, bullet_end);
+    ps.FireRay(bullet_start, bullet_dir, 5);
+} 
+
+void fireRocket(){
+} 
+
+void fireGrenade(){
+    Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
+    Eigen::Vector3d oldPos = curPos - bullet_dir;
+    Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
+                                   0.1, 0.5, 200);
+    explosive->oldPos = oldPos;
+    ps.grenades.push_back(explosive);
+} 
+
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
@@ -412,59 +435,51 @@ void myDisplay() {
                                   l->r, subdiv);
     }
 
-    Eigen::Vector3d bullet_start_draw;
-    bullet_start_draw << sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x, 
-                         -cos(cam_rot_x)+cam_pos_y, 
-                         sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z;
-    Eigen::Vector3d bullet_start(cam_pos_x, cam_pos_y, cam_pos_z);
-    Eigen::Vector3d bullet_dir;
-    bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
-    bullet_dir.normalize();
-    Eigen::Vector3d bullet_end = bullet_start + 9001*bullet_dir;
-
-    if (fire_primary){
-        drawRay(bullet_start_draw, bullet_end);
-        ps.FireRay(bullet_start, bullet_dir, 5);
-        fire_primary = false;
-    }
-
-    // Render all explosives
-    for (int i = 0; i < ps.BB.size(); i++){
+    // Render all time based explosive particles
+    for (int i = 0; i < ps.grenades.size(); i++){
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 
-        glTranslatef(ps.BB[i]->curPos[0], ps.BB[i]->curPos[1], ps.BB[i]->curPos[2]);
-        glutSolidSphere(ps.BB[i]->radius, slices, stacks);
-        glTranslatef(-ps.BB[i]->curPos[0], -ps.BB[i]->curPos[1], -ps.BB[i]->curPos[2]);
+        glTranslatef(ps.grenades[i]->curPos[0], ps.grenades[i]->curPos[1], ps.grenades[i]->curPos[2]);
+        glutSolidSphere(ps.grenades[i]->radius, slices, stacks);
+        glTranslatef(-ps.grenades[i]->curPos[0], -ps.grenades[i]->curPos[1], -ps.grenades[i]->curPos[2]);
     } 
     // Render all explosions
-    for (int i = 0; i < ps.Explosions.size(); i++){
+    for (int i = 0; i < ps.explosions.size(); i++){
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
 
+        glTranslatef(ps.explosions[i]->curPos[0], ps.explosions[i]->curPos[1], ps.explosions[i]->curPos[2]);
+        glutSolidSphere(ps.explosions[i]->radius, slices, stacks);
+        glTranslatef(-ps.explosions[i]->curPos[0], -ps.explosions[i]->curPos[1], -ps.explosions[i]->curPos[2]);
+    }
 
-        glTranslatef(ps.Explosions[i]->curPos[0], ps.Explosions[i]->curPos[1], ps.Explosions[i]->curPos[2]);
-        glutSolidSphere(ps.Explosions[i]->radius, slices, stacks);
-        glTranslatef(-ps.Explosions[i]->curPos[0], -ps.Explosions[i]->curPos[1], -ps.Explosions[i]->curPos[2]);
+    // Weapons logic
+    bullet_start_draw << sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x, 
+                         -cos(cam_rot_x)+cam_pos_y, 
+                         sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z;
+    bullet_start << cam_pos_x, cam_pos_y, cam_pos_z;
+    bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
+    bullet_dir.normalize();
+    bullet_end = bullet_start + 9001*bullet_dir;
+
+    if (fire_primary){
+        if (primary == "laser")
+            fireLaser();
+        fire_primary = false;
     }
 
     if (fire_secondary){
-        Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
-        Eigen::Vector3d oldPos = curPos - bullet_dir;
-        Sphere* explosive = new Sphere(curPos(0), curPos(1), curPos(2),
-                                       0.1, 0.5);
-        explosive->oldPos = oldPos;
-        explosive->setFuse(200);
-        ps.BB.push_back(explosive);
-
+        if (secondary == "grenade")
+            fireGrenade();
         fire_secondary = false;
     } 
     ps.TimeStep();
     
     glPopMatrix();
-    drawCrosshairs();
+    drawHUD();
 
     glFlush();
     glutSwapBuffers();

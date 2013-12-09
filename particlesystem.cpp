@@ -16,7 +16,6 @@ class Sphere {
         Eigen::Vector3d oldPos, curPos, acc;
         double radius;
         double mass;
-        double fuse;
 
         Sphere(){}
 
@@ -38,10 +37,6 @@ class Sphere {
         } 
         void applyForce(Eigen::Vector3d force) {
             this->acc = this->acc + force/mass;
-        }
-
-        void setFuse(double time) {
-            this->fuse = time;
         }
 
         void zeroAcc(){
@@ -136,35 +131,43 @@ class Sphere {
 
         //May want to change to list of Spheres
         //http://studiofreya.com/blog/3d-math-and-physics/simple-sphere-sphere-collision-detection-and-collision-response/
-        void sphereCollisionConstraints(vector<Sphere*> spheres) {
-            vector<Sphere*>::iterator si;
-            for (si = spheres.begin(); si != spheres.end(); ++si) {
-                Sphere *other = &(**si);
-                Eigen::Vector3d colaxis = (**si).curPos - (*this).curPos;
-                if (other != this && (colaxis.norm() < (**si).radius + (*this).radius)) {
-                    Eigen::Vector3d thiscolaxis = colaxis.normalized();
-                    Eigen::Vector3d thisVel = curPos - oldPos;
-                    Eigen::Vector3d thisVelx = thiscolaxis.dot(thisVel) * thiscolaxis;
-                    Eigen::Vector3d thisVely = thisVel - thisVelx;
+        void sphereCollisionConstraints(Sphere* other) {
+            Eigen::Vector3d colaxis = other->curPos - this->curPos;
+            if (other != this && (colaxis.norm() < other->radius + this->radius)) {
+                Eigen::Vector3d thiscolaxis = colaxis.normalized();
+                Eigen::Vector3d thisVel = curPos - oldPos;
+                Eigen::Vector3d thisVelx = thiscolaxis.dot(thisVel) * thiscolaxis;
+                Eigen::Vector3d thisVely = thisVel - thisVelx;
 
-                    Eigen::Vector3d othercolaxis = -thiscolaxis;
-                    Eigen::Vector3d otherVel = other->curPos - other->oldPos;
-                    Eigen::Vector3d otherVelx = othercolaxis.dot(otherVel) * othercolaxis;
-                    Eigen::Vector3d otherVely = otherVel - otherVelx;
+                Eigen::Vector3d othercolaxis = -thiscolaxis;
+                Eigen::Vector3d otherVel = other->curPos - other->oldPos;
+                Eigen::Vector3d otherVelx = othercolaxis.dot(otherVel) * othercolaxis;
+                Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                    Eigen::Vector3d otherNewVel = otherVelx * ((other->mass - this->mass)/(this->mass + other->mass)) 
-                        + thisVelx * (2 * this->mass/(this->mass + other->mass)) + otherVely;
-                    Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other->mass)/(this->mass + other->mass)) 
-                        + otherVelx * (2 * other->mass/(this->mass + other->mass)) + thisVely;
+                Eigen::Vector3d otherNewVel = otherVelx * ((other->mass - this->mass)/(this->mass + other->mass)) 
+                    + thisVelx * (2 * this->mass/(this->mass + other->mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other->mass)/(this->mass + other->mass)) 
+                    + otherVelx * (2 * other->mass/(this->mass + other->mass)) + thisVely;
 
-                    oldPos = curPos - thisNewVel;
-                    (*si)->oldPos = (*si)->curPos - otherNewVel;
-                }
+                oldPos = curPos - thisNewVel;
+                other->oldPos = other->curPos - otherNewVel;
             }
         }
+};
 
-        
- 
+class Grenade : public Sphere {
+    public:
+        double fuse;
+
+        Grenade(double curx, double cury, double curz,
+                double radius, double mass, double fuse){
+            this->oldPos << curx, cury, curz;
+            this->curPos << curx, cury, curz;
+            this->radius = radius;
+            this->mass = mass;
+            this->fuse = fuse;
+            this->acc << 0, 0, 0;
+        }
 };
 
 class Cylinder{
@@ -273,40 +276,37 @@ class Cylinder{
             return true;
         }
 
-        void sphereCollisionConstraints(vector<Sphere*>& BB){
-            for (int i = 0; i < BB.size(); i++){
-                Sphere* n1 = this->node1;
-                Sphere* n2 = this->node2;
-                Sphere* s = BB[i];
-                double d = PointLineSegDist(n1->curPos, n2->curPos, s->curPos);
-                if (d > s->radius + this->r)
-                    continue;
+        void sphereCollisionConstraints(Sphere* s){
+            Sphere* n1 = this->node1;
+            Sphere* n2 = this->node2;
+            double d = PointLineSegDist(n1->curPos, n2->curPos, s->curPos);
+            if (d > s->radius + this->r)
+                return;
 
-                Eigen::Vector3d proj = ProjPointLineSeg(n1->curPos, n2->curPos, s->curPos);
-                Eigen::Vector3d dir = (proj - s->curPos).normalized();
-                double offset = (proj-s->curPos).norm();
+            Eigen::Vector3d proj = ProjPointLineSeg(n1->curPos, n2->curPos, s->curPos);
+            Eigen::Vector3d dir = (proj - s->curPos).normalized();
+            double offset = (proj-s->curPos).norm();
 
-                Eigen::Vector3d s_vel = s->curPos - s->oldPos;
-                double s_mag = s_vel.norm();
-                s_vel = 0.5*(1-s->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+            Eigen::Vector3d s_vel = s->curPos - s->oldPos;
+            double s_mag = s_vel.norm();
+            s_vel = 0.5*(1-s->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
 
-                Eigen::Vector3d other_vel_1 = n1->curPos - n1->oldPos;
-                double other_mag_1 = other_vel_1.norm();
-                other_vel_1 += 0.5*(1-n1->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+            Eigen::Vector3d other_vel_1 = n1->curPos - n1->oldPos;
+            double other_mag_1 = other_vel_1.norm();
+            other_vel_1 += 0.5*(1-n1->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
 
-                Eigen::Vector3d other_vel_2 = n2->curPos - n2->oldPos;
-                double other_mag_2 = other_vel_2.norm();
-                other_vel_2 += 0.5*(1-n2->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+            Eigen::Vector3d other_vel_2 = n2->curPos - n2->oldPos;
+            double other_mag_2 = other_vel_2.norm();
+            other_vel_2 += 0.5*(1-n2->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
 
-                s->curPos -= dir*offset;
-                s->oldPos = s->curPos - s_vel;
+            s->curPos -= dir*offset;
+            s->oldPos = s->curPos - s_vel;
 
-                n1->curPos += dir*offset;
-                n2->curPos += dir*offset;
+            n1->curPos += dir*offset;
+            n2->curPos += dir*offset;
 
-                n1->oldPos = n1->curPos - other_vel_1;
-                n2->oldPos = n2->curPos - other_vel_2;
-            } 
+            n1->oldPos = n1->curPos - other_vel_1;
+            n2->oldPos = n2->curPos - other_vel_2;
         } 
 
         Sphere* node1;
@@ -585,8 +585,8 @@ class ParticleSystem {
         vector <Cylinder*> CC;
         double dtimestep;
         vector <Angle*> AA;
-        vector <Sphere*> BB;
-        vector <Sphere*> Explosions;
+        vector <Grenade*> grenades;
+        vector <Grenade*> explosions;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -608,7 +608,7 @@ class ParticleSystem {
         //void removeSphere(Sphere s);
         void addLink(Link& l);
         void addAngle(Angle& a);
-        void addBomb(Sphere& b);
+        void addBomb(Grenade& b);
         void zeroParticleAcc();
         void TimeStep();
         void Verlet();
@@ -630,8 +630,8 @@ void ParticleSystem::addAngle(Angle& a) {
     AA.push_back(&a);
 }
 
-void ParticleSystem::addBomb(Sphere& b) {
-    BB.push_back(&b);
+void ParticleSystem::addBomb(Grenade& b) {
+    grenades.push_back(&b);
 }
 
 void ParticleSystem::zeroParticleAcc(){
@@ -662,42 +662,41 @@ void ParticleSystem::Verlet () {
     for (si = SS.begin(); si != SS.end(); ++si) {
         (*si)->Verlet(dtimestep, world_acc);
     }
-    for (int i = 0; i < BB.size(); i++) {
-        BB[i]->Verlet(dtimestep, world_acc);
+    for (int i = 0; i < grenades.size(); i++) {
+        grenades[i]->Verlet(dtimestep, world_acc);
     }
 }
 
 void ParticleSystem::ComputeExplosions(){
     // Erase any old explosions(they've been rendered)
-    for (int i = 0; i < Explosions.size(); i++){
-        if (Explosions[i]->fuse < 0)
-            Explosions.erase(Explosions.begin() + i);
+    for (int i = 0; i < explosions.size(); i++){
+        if (explosions[i]->fuse < 0)
+            explosions.erase(explosions.begin() + i);
         else
-            Explosions[i]->fuse -= 1;
+            explosions[i]->fuse -= 1;
     }
 
-    for (int i = 0; i < BB.size(); i++) {
-        if (BB[i]->fuse < 0) {
-            Sphere* explosion = new Sphere(BB[i]->curPos(0), BB[i]->curPos(1), BB[i]->curPos(2), 1.0, 1.0);
-            explosion->setFuse(2);
-            Explosions.push_back(explosion);
-            for (int j = 0; j < BB.size(); j++) {
+    for (int i = 0; i < grenades.size(); i++) {
+        if (grenades[i]->fuse < 0) {
+            Grenade* explosion = new Grenade(grenades[i]->curPos(0), grenades[i]->curPos(1), grenades[i]->curPos(2), 1.0, 1.0, 2);
+            explosions.push_back(explosion);
+            for (int j = 0; j < grenades.size(); j++) {
                 if (i == j)
                     continue;
-                Eigen::Vector3d blast = (BB[j]->curPos - BB[i]->curPos);
+                Eigen::Vector3d blast = (grenades[j]->curPos - grenades[i]->curPos);
                 Eigen::Vector3d blast_Direction = blast.normalized();
                 double blast_dist = blast.norm();
-                BB[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
+                grenades[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
             }
             for (int j = 0; j < SS.size(); j++) {
-                Eigen::Vector3d blast = (SS[j]->curPos - BB[i]->curPos);
+                Eigen::Vector3d blast = (SS[j]->curPos - grenades[i]->curPos);
                 Eigen::Vector3d blast_Direction = blast.normalized();
                 double blast_dist = blast.norm();
                 SS[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
             }
-            BB.erase(BB.begin() + i);
+            grenades.erase(grenades.begin() + i);
         } else {
-            BB[i]->fuse -= 1;
+            grenades[i]->fuse -= 1;
         } 
     }
 } 
@@ -724,13 +723,18 @@ void ParticleSystem::SatisfyConstraints() {
         (*si)->constraints(box_corner, box_corner+box_dims);
     }
 
-    for (int j = 0; j < BB.size(); j++) {
-        BB[j]->constraints(box_corner, box_corner+box_dims);
-        BB[j]->sphereCollisionConstraints(BB);
+    for (int i = 0; i < grenades.size(); i++) {
+        grenades[i]->constraints(box_corner, box_corner+box_dims);
+        for (int j = 0; j < grenades.size(); j++){
+            if (i == j)
+                continue;
+            grenades[i]->sphereCollisionConstraints(grenades[j]);
+        }
     }
     for (int i = 0; i < CC.size(); i++){
         CC[i]->constraints(CC, i);
-        CC[i]->sphereCollisionConstraints(BB);
+        for (int j = 0; j < grenades.size(); j++)
+            CC[i]->sphereCollisionConstraints(grenades[j]);
     }
 
     vector<Link*>::iterator li;
