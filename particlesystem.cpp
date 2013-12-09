@@ -48,7 +48,7 @@ class Sphere {
             acc = Eigen::Vector3d(0,0,0);
         }
 
-        void constraints (Eigen::Vector3d& ll, Eigen::Vector3d up, vector<Sphere*>& spheres) {
+        void constraints (Eigen::Vector3d& ll, Eigen::Vector3d up) {
             //collisionConstraints(spheres);
             boundaryConstraints(ll, up);
         }
@@ -269,8 +269,10 @@ void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
                 Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
                 Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(this->mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * other_mass/(this->mass + other_mass)) + thisVely;
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(this->mass + other_mass)) 
+                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
+                    + otherVelx * (2 * other_mass/(this->mass + other_mass)) + thisVely;
 
                 oldPos = curPos - thisNewVel;
                 s2->oldPos = s2->curPos - otherNewVel;
@@ -292,8 +294,10 @@ void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
                 Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
                 Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) 
+                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
+                    + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
 
 
                 oldPos = curPos - thisNewVel;
@@ -320,8 +324,10 @@ void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
                 Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
                 Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) 
+                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
+                    + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
 
 
                 oldPos = curPos - thisNewVel;
@@ -474,6 +480,7 @@ class ParticleSystem {
         vector <Cylinder*> CC;
         double dtimestep;
         vector <Angle*> AA;
+        vector <Sphere*> BB;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -495,6 +502,7 @@ class ParticleSystem {
         //void removeSphere(Sphere s);
         void addLink(Link& l);
         void addAngle(Angle& a);
+        void addBomb(Sphere& b);
         void zeroParticleAcc();
         void TimeStep();
         void Verlet();
@@ -512,6 +520,10 @@ void ParticleSystem::addLink(Link& l) {
 
 void ParticleSystem::addAngle(Angle& a) {
     AA.push_back(&a);
+}
+
+void ParticleSystem::addBomb(Sphere& b) {
+    BB.push_back(&b);
 }
 
 void ParticleSystem::zeroParticleAcc(){
@@ -561,9 +573,14 @@ void ParticleSystem::SatisfyConstraints() {
 
     vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
-        (*si)->constraints(box_corner, box_corner+box_dims, SS);
+        (*si)->constraints(box_corner, box_corner+box_dims);
     }
 
+    for (int j = 0; j < BB.size(); j++) {
+        BB[j]->constraints(box_corner, box_corner+box_dims);
+        BB[j]->sphereCollisionConstraints(BB);
+        BB[j]->cylinderCollisionConstraints(CC);
+    }
     for (int i = 0; i < CC.size(); i++){
         CC[i]->constraints(CC, i);
     }
