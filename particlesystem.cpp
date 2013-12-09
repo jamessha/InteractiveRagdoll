@@ -241,7 +241,42 @@ class Cylinder{
                 body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - other_node2_mag*other_node2_v;
             }
         }
-        
+
+        // - line has starting point (x0, y0, z0) and ending point (x1, y1, z1) 
+        bool LineIntersect(Eigen::Vector3d& line_start, Eigen::Vector3d& line_end,
+                           Eigen::Vector3d& intersection) {
+            // Solution : http://www.gamedev.net/community/forums/topic.asp?topic_id=467789
+            Eigen::Vector3d line_dir = (line_end - line_start).normalized();
+            Eigen::Vector3d A = this->node1->curPos;
+            Eigen::Vector3d B = this->node2->curPos;
+
+            Eigen::Vector3d nan_bias1(1e-10, -1e-10, 1e-10);
+            Eigen::Vector3d nan_bias2(-1e-10, 1e-10, -1e-10);
+            Eigen::Vector3d AB = (B - A)+nan_bias1;
+            Eigen::Vector3d AO = (line_start - A)+nan_bias2;
+            Eigen::Vector3d AOxAB = AO.cross(AB);
+            Eigen::Vector3d VxAB  = line_dir.cross(AB);
+
+
+            double ab2 = AB.dot(AB);
+            double a = VxAB.dot(VxAB);
+            double b = 2 * VxAB.dot(AOxAB);
+            double c = AOxAB.dot(AOxAB) - (r*r * ab2);
+            double d = b*b - 4*a*c;
+            if (d < 0) 
+                return false;
+            double t = (-b - sqrt(d)) / (2 * a);
+            if (t < 0) 
+                return false;
+
+            intersection = line_start + line_dir*t; /// intersection point
+            Eigen::Vector3d projection = A + (AB.dot(intersection - A) / ab2) * AB; /// intersection projected onto cylinder axis
+            if ((projection - A).norm() + (B - projection).norm() > AB.norm() + 1e-5) 
+                return false;
+
+            return true;
+        }
+
         Sphere* node1;
         Sphere* node2;
         double r;
@@ -534,6 +569,7 @@ class ParticleSystem {
         void Verlet();
         void SatisfyConstraints();
         void GetBox(vector<Eigen::Vector3d>& vertices);
+        void FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag);
 };
 
 void ParticleSystem::addSphere(Sphere& s) {
@@ -670,4 +706,25 @@ void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
     vertices.push_back(corner_6);
     vertices.push_back(corner_7);
     vertices.push_back(corner_8);
+} 
+
+void ParticleSystem::FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag){
+    for (int i = 0; i < this->CC.size(); i++){
+        Eigen::Vector3d intersect;
+        Eigen::Vector3d end = start + 9000*dir;
+        bool does_intersect = this->CC[i]->LineIntersect(start, end, intersect);
+        if (!does_intersect)
+            continue;
+        Sphere* s1 = this->CC[i]->node1;
+        Sphere* s2 = this->CC[i]->node2;
+        
+        double d1 = (s1->curPos - intersect).norm();
+        double d2 = (s2->curPos - intersect).norm();
+
+        double w1 = d1/(d1+d2);
+        double w2 = d2/(d1+d2);
+
+        s1->oldPos -= dir*w1*mag;
+        s2->oldPos -= dir*w2*mag;
+    } 
 } 

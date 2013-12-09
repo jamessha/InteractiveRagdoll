@@ -225,3 +225,4 @@ double Seg2SegDist(Eigen::Vector3d& s1p1, Eigen::Vector3d& s1p2, Eigen::Vector3d
 
     return dP.norm();
 }
+
