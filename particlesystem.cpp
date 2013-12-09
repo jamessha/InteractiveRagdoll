@@ -128,6 +128,7 @@ class Sphere {
         }
 
         //May want to change to list of Spheres
+        //http://studiofreya.com/blog/3d-math-and-physics/simple-sphere-sphere-collision-detection-and-collision-response/
         void sphereCollisionConstraints(vector<Sphere*> spheres) {
             vector<Sphere*>::iterator si;
             for (si = spheres.begin(); si != spheres.end(); ++si) {
@@ -144,8 +145,8 @@ class Sphere {
                     Eigen::Vector3d otherVelx = othercolaxis.dot(otherVel) * othercolaxis;
                     Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                    Eigen::Vector3d otherNewVel = thisVelx + otherVely;
-                    Eigen::Vector3d thisNewVel = otherVelx + thisVely;
+                    Eigen::Vector3d otherNewVel = otherVelx * ((other->mass - this->mass)/(this->mass + other->mass)) + thisVelx * (2 * this->mass/(this->mass + other->mass)) + otherVely;
+                    Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other->mass)/(this->mass + other->mass)) + otherVelx * (2 * other->mass/(this->mass + other->mass)) + thisVely;
 
                     oldPos = curPos - thisNewVel;
                     (*si)->oldPos = (*si)->curPos - otherNewVel;
@@ -250,35 +251,88 @@ void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
 
         double projection_distance = n1tocenter.dot(n1ton2);
         double cylinder_length = n1ton2.dot(n1ton2);
+        double other_mass = s1->mass + s2->mass;
       
         if (projection_distance >= cylinder_length) {
-	       //Found out that closest sphere is s2
-	       Sphere *closestSphere = s2;
-	       if (n2tocenter.norm() <= s2->radius + radius) {
-	           //find the collision normal
-	           Eigen::Vector3d collision_normal = (curPos - s2->curPos).normalized();
-	           //Do sphere-sphere intersection calculation?
+	        //Found out that closest sphere is s2
+	        Sphere *closestSphere = s2;
+	        if (n2tocenter.norm() <= s2->radius + radius) {
+	            //find the collision normal
+	            Eigen::Vector3d collision_normal = (curPos - s2->curPos).normalized();
+	            //Do sphere-sphere intersection calculation?
+
+                Eigen::Vector3d thisVel = curPos - oldPos;
+                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
+                Eigen::Vector3d thisVely = thisVel - thisVelx;
+
+                Eigen::Vector3d otherVel = s2->curPos - s2->oldPos;
+                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
+                Eigen::Vector3d otherVely = otherVel - otherVelx;
+
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(this->mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * other_mass/(this->mass + other_mass)) + thisVely;
+
+                oldPos = curPos - thisNewVel;
+                s2->oldPos = s2->curPos - otherNewVel;
+
 	        }
         } else if (projection_distance <= 0) {
-	       //Found out that closest sphere is s1
-	       Sphere *closestSphere = s1;
-	       if (n1tocenter.norm() <= s1->radius + radius) {
-	           Eigen::Vector3d collision_normal = (curPos - s1->curPos).normalized();
-	           //find the collision normal
-	           //Do sphere-sphere intersection calculation?
-	       }
+	        //Found out that closest sphere is s1
+	        Sphere *closestSphere = s1;
+	        if (n1tocenter.norm() <= s1->radius + radius) {
+	            Eigen::Vector3d collision_normal = (curPos - s1->curPos).normalized();
+	            //find the collision normal
+	            //Do sphere-sphere intersection calculation?
+
+                Eigen::Vector3d thisVel = curPos - oldPos;
+                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
+                Eigen::Vector3d thisVely = thisVel - thisVelx;
+
+                Eigen::Vector3d otherVel = s1->curPos - s1->oldPos;
+                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
+                Eigen::Vector3d otherVely = otherVel - otherVelx;
+
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
+
+
+                oldPos = curPos - thisNewVel;
+                s1->oldPos = s1->curPos - otherNewVel;
+	        }
         } else {
-	       //Found out that the sphere intersects with the cylindrical part
+	        //Found out that the sphere intersects with the cylindrical part
 	
-	       //Find the closest point on the line segment
-	       Eigen::Vector3d closestPoint = n1ton2.normalized()  * projection_distance/cylinder_length;
-	       if ((curPos - closestPoint).norm() <= radius + cyl->r) {
-	           //find the collision normal
-	           Eigen::Vector3d collision_normal = (curPos - closestPoint).normalized();
+	        //Find the closest point on the line segment
+	        Eigen::Vector3d closestPoint = n1ton2.normalized()  * projection_distance/cylinder_length;
+	        if ((curPos - closestPoint).norm() <= radius + cyl->r) {
+	            //find the collision normal
+	            Eigen::Vector3d collision_normal = (curPos - closestPoint).normalized();
+
+                //Sphere cylinder collision
+
+                Eigen::Vector3d thisVel = curPos - oldPos;
+                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
+                Eigen::Vector3d thisVely = thisVel - thisVelx;
+
+                double weight1 = 1 - (projection_distance/cylinder_length);
+                double weight2 = 1 - weight1;
+                Eigen::Vector3d otherVel =  weight1 * (s1->curPos - s1->oldPos) + weight2 * (s2->curPos - s2->oldPos);
+                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
+                Eigen::Vector3d otherVely = otherVel - otherVelx;
+
+                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
+                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
+
+
+                oldPos = curPos - thisNewVel;
+                s1->oldPos = s1->curPos - weight1 * otherNewVel;
+                s2->oldPos = s2->curPos - weight2 * otherNewVel; 
 	       }
         }
     }
 }
+
+
 class Link {
     public:
         Sphere *s1, *s2;
