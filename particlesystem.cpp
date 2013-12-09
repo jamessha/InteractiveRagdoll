@@ -153,8 +153,10 @@ class Sphere {
                     Eigen::Vector3d otherVelx = othercolaxis.dot(otherVel) * othercolaxis;
                     Eigen::Vector3d otherVely = otherVel - otherVelx;
 
-                    Eigen::Vector3d otherNewVel = otherVelx * ((other->mass - this->mass)/(this->mass + other->mass)) + thisVelx * (2 * this->mass/(this->mass + other->mass)) + otherVely;
-                    Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other->mass)/(this->mass + other->mass)) + otherVelx * (2 * other->mass/(this->mass + other->mass)) + thisVely;
+                    Eigen::Vector3d otherNewVel = otherVelx * ((other->mass - this->mass)/(this->mass + other->mass)) 
+                        + thisVelx * (2 * this->mass/(this->mass + other->mass)) + otherVely;
+                    Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other->mass)/(this->mass + other->mass)) 
+                        + otherVelx * (2 * other->mass/(this->mass + other->mass)) + thisVely;
 
                     oldPos = curPos - thisNewVel;
                     (*si)->oldPos = (*si)->curPos - otherNewVel;
@@ -385,7 +387,7 @@ void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
 class Link {
     public:
         Sphere *s1, *s2;
-        double const_dist;
+        double const_dist, max_dist;
 
         virtual double constraints(){return 0;};
 };
