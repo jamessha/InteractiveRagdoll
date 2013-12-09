@@ -57,12 +57,9 @@ Viewport viewport;
 int windowID;
 
 double cam_rot_x = 0, cam_rot_y = 0;
-double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 10;
+double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
 bool perspective;
-bool fire = false;
-Eigen::Vector3d bullet_start;
-Eigen::Vector3d bullet_dir;
 
 Buddy buddy;
 Eigen::Vector3d box_corner(-10, -10, -10);
@@ -94,6 +91,7 @@ void initializeVars() {
     ps.SS = buddy.joints;
     ps.LL = buddy.limbs;
     ps.CC = buddy.body_parts;
+    ps.AA = buddy.joint_angles;
 }
 
 // function that handles keyboard events
@@ -104,29 +102,23 @@ void myKeys(unsigned char key, int x, int y) {
 		exit(0);
 		break;
 	case W_KEY:
-		cam_pos_x -= sin(cam_rot_y)*0.5;
-		cam_pos_z -= cos(cam_rot_y)*0.5;
+		cam_pos_x += double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z += double(cos(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case A_KEY:
-		cam_pos_x -= sin(PI/2+cam_rot_y)*0.5;
-		cam_pos_z -= cos(PI/2+cam_rot_y)*0.5;
+		cam_pos_x -= double(cos(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z -= double(sin(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case S_KEY:
-        cam_pos_x += sin(cam_rot_y)*0.5;
-		cam_pos_z += cos(cam_rot_y)*0.5;
+		cam_pos_x -= double(sin(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z -= double(cos(cam_rot_y/180 * PI)) * 0.2;
 		break;
 	case D_KEY:
-        cam_pos_x += sin(PI/2+cam_rot_y)*0.5;
-		cam_pos_z += cos(PI/2+cam_rot_y)*0.5;
+		cam_pos_x += double(cos(cam_rot_y/180 * PI)) * 0.2;
+		cam_pos_z += double(sin(cam_rot_y/180 * PI)) * 0.2;
 		break;
-    case SPACEBAR:
-        bullet_start << -cam_pos_x, -cam_pos_y-1, -cam_pos_z;
-        bullet_dir << sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y);
-        bullet_dir.normalize();
-        ps.FireRay(bullet_start, bullet_dir, 5);
-        fire = true;
-        break;
 	}
+	glutPostRedisplay();
 }
 
 // function that handles special key events
@@ -137,10 +129,8 @@ void mySpecial(int key, int x, int y) {
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.1;
-    if (tmp < PI/2 && tmp > -PI/2)
-        cam_rot_x = tmp;
-	cam_rot_y -= atan2((double) x-prev_x, 1)*0.1;
+	cam_rot_y += (double) x - prev_x;
+	cam_rot_x += (double) y - prev_y;
 	prev_x = x;
 	prev_y = y;
 }
@@ -206,11 +196,6 @@ void drawBox(){
 
 } 
 
-void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& dir){
-    Eigen::Vector3d end = start + 9000*dir;
-    renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
-}
-
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
@@ -220,10 +205,8 @@ void myDisplay() {
     gluPerspective(120.0, 1.0, 1.0, 50.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    glRotatef(-cam_rot_x*180/PI, 1.0, 0.0, 0.0);
-    glRotatef(-cam_rot_y*180/PI, 0.0, 1.0, 0.0);
-    gluLookAt(-cam_pos_x, -cam_pos_y, -cam_pos_z, // lookfrom
-              -cam_pos_x, -cam_pos_y,  -cam_pos_z + 9, // lookat
+    gluLookAt(0.0, 0.0, -9.0, // lookfrom
+              0.0, 0.0,  0.0, // lookat
               0.0, 1.0,  0.0); // up
 
 	glEnable(GL_DEPTH_TEST);
@@ -235,6 +218,10 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
+    glRotatef(cam_rot_x, 1.0, 0.0, 0.0);
+    glRotatef(cam_rot_y, 0.0, 1.0, 0.0);
+    glTranslatef(cam_pos_x, cam_pos_y, cam_pos_z);
+	
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
@@ -256,11 +243,6 @@ void myDisplay() {
                                   l->r, subdiv);
     }
     ps.TimeStep();
-    
-    if (fire){
-        drawBullet(bullet_start, bullet_dir);
-        fire = false;
-    }
 
     glFlush();
     glutSwapBuffers();
@@ -268,6 +250,7 @@ void myDisplay() {
 }
 
 int main(int argc, char *argv[]) {
+
     initializeVars();
 
     glutInit(&argc, argv);
