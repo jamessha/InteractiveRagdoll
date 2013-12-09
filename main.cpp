@@ -19,6 +19,7 @@
 #include <GL/glu.h>
 #endif
 
+#include "FreeImage/Freeimage.h"
 #include <time.h>
 #include <math.h>
 #include <set>
@@ -85,6 +86,16 @@ GLfloat cyan_ambient[] = {0, 0.2, 0.2};
 GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
+
+GLuint text = 0; //for one texture. We are only going go to use one
+
+void loadTexture(){
+  FIBITMAP* bitmap = FreeImage_Load(FIF_PNG, "brickwalltexture.png", PNG_DEFAULT);
+  glGenTextures(1, &text);
+  glBind(GL_TEXTURE_2D)
+
+}
+
 
 // function that sets up global variables etc
 void initializeVars() {
