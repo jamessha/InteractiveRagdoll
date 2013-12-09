@@ -383,10 +383,13 @@ void myDisplay() {
                                   l->r, subdiv);
     }
     ps.TimeStep();
-
+    
+    Eigen::Vector3d bullet_start_draw;
+    bullet_start_draw << sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x, 
+                         -cos(cam_rot_x)+cam_pos_y, 
+                         sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z;
     bullet_start << cam_pos_x, cam_pos_y, cam_pos_z;
     bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
-    Eigen::Vector3d bullet_start_draw(cam_pos_x, cam_pos_y-1, cam_pos_z);
     Eigen::Vector3d bullet_end = bullet_start + 9001*bullet_dir;
 
     if (fire){
