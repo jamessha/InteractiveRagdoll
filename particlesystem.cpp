@@ -419,6 +419,44 @@ class HardLink : public Link {
         }
 };
 
+class SoftLink : public Link {
+    public:
+        SoftLink(){}
+        
+        SoftLink(Sphere *s1, Sphere *s2, double const_dist, double max_dist) {
+            this->s1 = s1;
+            this->s2 = s2;
+            this->const_dist = const_dist;
+            this->max_dist = max_dist;
+        }
+        
+        double constraints() {
+            Eigen::Vector3d vec = ((*s2).curPos - (*s1).curPos);
+            double magnitude = vec.norm();
+            double ext_dist = 0;
+            double weight1 = fmax(1.0 - (*s1).mass/((*s1).mass + (*s2).mass), 1e-5);
+            double weight2 = fmax(1.0 - (*s2).mass/((*s1).mass + (*s2).mass), 1e-5);
+            Eigen::Vector3d s1s2 = vec.normalized();
+            Eigen::Vector3d s2s1 = -s1s2;
+            if (magnitude - max_dist > 1e-5) {
+                (*s1).curPos = (*s1).curPos + weight1*ext_dist*s1s2;
+                (*s2).curPos = (*s2).curPos + weight2*ext_dist*s2s1;
+                (*s1).oldPos = (*s1).oldPos + weight1*ext_dist*s1s2;
+                (*s2).oldPos = (*s2).oldPos + weight2*ext_dist*s2s1;
+                return magnitude - max_dist;
+            } else if (const_dist - magnitude > 1e-5) {
+                (*s1).curPos = (*s1).curPos + weight1*ext_dist*s2s1;
+                (*s2).curPos = (*s2).curPos + weight2*ext_dist*s1s2;
+                (*s1).oldPos = (*s1).oldPos + weight1*ext_dist*s2s1;
+                (*s2).oldPos = (*s2).oldPos + weight2*ext_dist*s1s2;
+                return const_dist - magnitude;
+            }
+            return 0;
+        }
+        
+        
+};
+
 class Angle {
     /*              s4
                     /\
@@ -532,6 +570,80 @@ class SoftAngle : public Angle {
         }
 
 
+};
+
+class HardAngle : public Angle {
+    public:
+        HardAngle() {}
+        
+        HardAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link * l5, double angle) {
+            //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
+            //into the above diagram.
+            if (l1->s1 == l2->s1) {
+                this->s1 = l1->s1;
+                this->s2 = l1->s2;
+                this->s3 = l2->s2;
+            } else if (l1->s1 == l2->s2) {
+                this->s1 = l1->s1;
+                this->s2 = l1->s2;
+                this->s3 = l2->s1;
+            } else if (l1->s2 == l2->s1) {
+                this->s1 = l1->s2;
+                this->s2 = l1->s1;
+                this->s3 = l2->s2;
+            } else if (l1->s2 == l2->s2) {
+                this->s1 = l1->s2;
+                this->s2 = l1->s1;
+                this->s3 = l2->s1;
+            }
+            if (l4->s1 == l5->s1) {
+                this->s4 = l4->s1;
+            } else if (l4->s1 == l5->s2) {
+                this->s4 = l4->s1;
+            } else if (l4->s2 == l5->s1) {
+                this->s4 = l4->s2;
+            } else if (l4->s2 == l5->s2) {
+                this->s4 = l4->s2;
+            }
+
+            this->const_angle = angle;
+        }
+        
+        void constraints() {
+            //Variables for max angle position
+            Eigen::Vector3d maxPos;
+            Eigen::Matrix3d rotation;
+            Eigen::Vector3d diff;
+            double cosa, sina, mcosa, msina;
+
+
+            Eigen::Vector3d hingeCenter = (s2->curPos + s3->curPos)/2;
+            Eigen::Vector3d s2s3 = (s2->curPos - s3->curPos).normalized();
+            Eigen::Vector3d v1 = s4->curPos - hingeCenter;
+            Eigen::Vector3d v2 = s1->curPos - hingeCenter;
+            //Need the up vector to enlarge to 360 degrees
+            Eigen::Vector3d up = s2s3.cross(v2);
+            //Calculated using the dotproduct
+            double orientation = up.dot(v2);
+            //use dotproduct cosine relation to find angle (in degrees), unfortunately limited to 0-180 degrees so need
+            //to use up vector (calculated above) to enlarge to 360 degrees.
+            double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
+            if ( orientation < 0 ) {
+                angle = angle + 180;
+            }
+            if (!(abs(angle - const_angle) < 1e-3)) {
+                double rotation_amount = const_angle - angle;
+                cosa = cos(rotation_amount * 3.1415926535/180); sina = sin(rotation_amount * 3.1415926535/180); mcosa = 1 - cosa; msina = 1 - sina;
+                rotation << 
+                    cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
+                    s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
+                    s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                maxPos = rotation * s1->curPos;
+                diff = maxPos - s4->curPos;
+                s4->curPos = maxPos;
+                s4->oldPos = s4->oldPos + diff;
+            }
+        }
 };
 
 class ParticleSystem {
