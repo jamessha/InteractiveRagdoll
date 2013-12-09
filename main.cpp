@@ -19,7 +19,7 @@
 #include <GL/glu.h>
 #endif
 
-#include "FreeImage/Freeimage.h"
+#include "FreeImage/FreeImage.h"
 #include <time.h>
 #include <math.h>
 #include <set>
@@ -93,8 +93,7 @@ GLuint text = 0; //for one texture. We are only going go to use one
 void loadTexture(){
   FIBITMAP* bitmap = FreeImage_Load(FIF_PNG, "brickwalltexture.png", PNG_DEFAULT);
   glGenTextures(1, &text);
-  glBind(GL_TEXTURE_2D)
-
+  //glBind(GL_TEXTURE_2D);
 }
 
 
@@ -455,7 +454,7 @@ void myDisplay() {
         Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
         Eigen::Vector3d oldPos = curPos - bullet_dir;
         Sphere* explosive = new Sphere(curPos(0), curPos(1), curPos(2),
-                                       0.5, 1.0);
+                                       0.1, 0.5);
         explosive->oldPos = oldPos;
         explosive->setFuse(200);
         ps.BB.push_back(explosive);
