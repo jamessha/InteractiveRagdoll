@@ -63,7 +63,7 @@ Vector3d homogeneous_to_euc_dir(Vector4d& v){
 	return out;
 }
 
-// The following code from https://github.com/curran/renderCyliner
+// The next two functions (cylinder render) from https://github.com/curran/renderCyliner
 void renderCylinder(float x1, float y1, float z1, float x2,float y2, float z2, float radius,int subdivisions,GLUquadricObj *quadric)
 {
     float vx = x2-x1;

@@ -10,14 +10,13 @@
 //constraints constrains the Particle (by links but right now it's just within a box defined by vectors)
 
 using namespace std;
-class Cylinder;
 
 class Sphere {
     public:
         Eigen::Vector3d oldPos, curPos, acc;
         double radius;
         double mass;
-        double explosion_time;
+        double fuse;
 
         Sphere(){}
 
@@ -41,8 +40,8 @@ class Sphere {
             this->acc = this->acc + force/mass;
         }
 
-        void setExpTime(double time) {
-            this->explosion_time = time;
+        void setFuse(double time) {
+            this->fuse = time;
         }
 
         void zeroAcc(){
@@ -164,12 +163,8 @@ class Sphere {
                 }
             }
         }
+
         
-
-  //http://stackoverflow.com/questions/15310239/collision-detection-response-between-a-moving-sphere-and-a-circular-cylinder
-  void cylinderCollisionConstraints(vector<Cylinder*>& body_parts);
-  
-
  
 };
 
@@ -260,7 +255,6 @@ class Cylinder{
             Eigen::Vector3d AOxAB = AO.cross(AB);
             Eigen::Vector3d VxAB  = line_dir.cross(AB);
 
-
             double ab2 = AB.dot(AB);
             double a = VxAB.dot(VxAB);
             double b = 2 * VxAB.dot(AOxAB);
@@ -280,110 +274,46 @@ class Cylinder{
             return true;
         }
 
+        void sphereCollisionConstraints(vector<Sphere*>& BB){
+            for (int i = 0; i < BB.size(); i++){
+                Sphere* n1 = this->node1;
+                Sphere* n2 = this->node2;
+                Sphere* s = BB[i];
+                double d = PointLineSegDist(n1->curPos, n2->curPos, s->curPos);
+                if (d > s->radius + this->r)
+                    continue;
+
+                Eigen::Vector3d proj = ProjPointLineSeg(n1->curPos, n2->curPos, s->curPos);
+                Eigen::Vector3d dir = (proj - s->curPos).normalized();
+                double offset = (proj-s->curPos).norm();
+
+                Eigen::Vector3d s_vel = s->curPos - s->oldPos;
+                double s_mag = s_vel.norm();
+                s_vel = 0.5*(1-s->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+
+                Eigen::Vector3d other_vel_1 = n1->curPos - n1->oldPos;
+                double other_mag_1 = other_vel_1.norm();
+                other_vel_1 += 0.5*(1-n1->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+
+                Eigen::Vector3d other_vel_2 = n2->curPos - n2->oldPos;
+                double other_mag_2 = other_vel_2.norm();
+                other_vel_2 += 0.5*(1-n2->mass/(n1->mass+n2->mass+s->mass))*s_mag*dir;
+
+                s->curPos -= dir*offset;
+                s->oldPos = s->curPos - s_vel;
+
+                n1->curPos += dir*offset;
+                n2->curPos += dir*offset;
+
+                n1->oldPos = n1->curPos - other_vel_1;
+                n2->oldPos = n2->curPos - other_vel_2;
+            } 
+        } 
+
         Sphere* node1;
         Sphere* node2;
         double r;
 };
-
-void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
-    vector<Cylinder*>::iterator ci;
-    for (int i = 0; i < body_parts.size(); i++) {
-        Cylinder *cyl = body_parts[i];
-        Sphere *s1 = cyl->node1;
-        Sphere *s2 = cyl->node2;
-        Eigen::Vector3d n1ton2 = s2->curPos - s1->curPos;
-        Eigen::Vector3d n1tocenter = curPos - s1->curPos;
-        Eigen::Vector3d n2tocenter = curPos - s2->curPos;
-
-        double projection_distance = n1tocenter.dot(n1ton2);
-        double cylinder_length = n1ton2.dot(n1ton2);
-        double other_mass = s1->mass + s2->mass;
-      
-        if (projection_distance >= cylinder_length) {
-	        //Found out that closest sphere is s2
-	        Sphere *closestSphere = s2;
-	        if (n2tocenter.norm() <= s2->radius + radius) {
-	            //find the collision normal
-	            Eigen::Vector3d collision_normal = (curPos - s2->curPos).normalized();
-	            //Do sphere-sphere intersection calculation?
-
-                Eigen::Vector3d thisVel = curPos - oldPos;
-                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
-                Eigen::Vector3d thisVely = thisVel - thisVelx;
-
-                Eigen::Vector3d otherVel = s2->curPos - s2->oldPos;
-                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
-                Eigen::Vector3d otherVely = otherVel - otherVelx;
-
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(this->mass + other_mass)) 
-                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
-                    + otherVelx * (2 * other_mass/(this->mass + other_mass)) + thisVely;
-
-                oldPos = curPos - thisNewVel;
-                s2->oldPos = s2->curPos - otherNewVel;
-
-	        }
-        } else if (projection_distance <= 0) {
-	        //Found out that closest sphere is s1
-	        Sphere *closestSphere = s1;
-	        if (n1tocenter.norm() <= s1->radius + radius) {
-	            Eigen::Vector3d collision_normal = (curPos - s1->curPos).normalized();
-	            //find the collision normal
-	            //Do sphere-sphere intersection calculation?
-
-                Eigen::Vector3d thisVel = curPos - oldPos;
-                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
-                Eigen::Vector3d thisVely = thisVel - thisVelx;
-
-                Eigen::Vector3d otherVel = s1->curPos - s1->oldPos;
-                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
-                Eigen::Vector3d otherVely = otherVel - otherVelx;
-
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) 
-                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
-                    + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
-
-
-                oldPos = curPos - thisNewVel;
-                s1->oldPos = s1->curPos - otherNewVel;
-	        }
-        } else {
-	        //Found out that the sphere intersects with the cylindrical part
-	
-	        //Find the closest point on the line segment
-	        Eigen::Vector3d closestPoint = n1ton2.normalized()  * projection_distance/cylinder_length;
-	        if ((curPos - closestPoint).norm() <= radius + cyl->r) {
-	            //find the collision normal
-	            Eigen::Vector3d collision_normal = (curPos - closestPoint).normalized();
-
-                //Sphere cylinder collision
-
-                Eigen::Vector3d thisVel = curPos - oldPos;
-                Eigen::Vector3d thisVelx = collision_normal.dot(thisVel) * collision_normal;
-                Eigen::Vector3d thisVely = thisVel - thisVelx;
-
-                double weight1 = 1 - (projection_distance/cylinder_length);
-                double weight2 = 1 - weight1;
-                Eigen::Vector3d otherVel =  weight1 * (s1->curPos - s1->oldPos) + weight2 * (s2->curPos - s2->oldPos);
-                Eigen::Vector3d otherVelx = collision_normal.dot(otherVel) * collision_normal;
-                Eigen::Vector3d otherVely = otherVel - otherVelx;
-
-                Eigen::Vector3d otherNewVel = otherVelx * ((other_mass - this->mass)/(other_mass + other_mass)) 
-                    + thisVelx * (2 * other_mass/(this->mass + other_mass)) + otherVely;
-                Eigen::Vector3d thisNewVel = thisVelx * ((this->mass - other_mass)/(this->mass + other_mass)) 
-                    + otherVelx * (2 * s1->mass/(this->mass + other_mass)) + thisVely;
-
-
-                oldPos = curPos - thisNewVel;
-                s1->oldPos = s1->curPos - weight1 * otherNewVel;
-                s2->oldPos = s2->curPos - weight2 * otherNewVel; 
-	       }
-        }
-    }
-}
-
 
 class Link {
     public:
@@ -675,6 +605,7 @@ class ParticleSystem {
         double dtimestep;
         vector <Angle*> AA;
         vector <Sphere*> BB;
+        vector <Sphere*> Explosions;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -702,6 +633,7 @@ class ParticleSystem {
         void SatisfyConstraints();
         void GetBox(vector<Eigen::Vector3d>& vertices);
         void FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag);
+        void ComputeExplosions();
 };
 
 void ParticleSystem::addSphere(Sphere& s) {
@@ -748,28 +680,49 @@ void ParticleSystem::Verlet () {
     for (si = SS.begin(); si != SS.end(); ++si) {
         (*si)->Verlet(dtimestep, world_acc);
     }
+    for (int i = 0; i < BB.size(); i++) {
+        BB[i]->Verlet(dtimestep, world_acc);
+    }
 }
+
+void ParticleSystem::ComputeExplosions(){
+    // Erase any old explosions(they've been rendered)
+    for (int i = 0; i < Explosions.size(); i++){
+        if (Explosions[i]->fuse < 0)
+            Explosions.erase(Explosions.begin() + i);
+        else
+            Explosions[i]->fuse -= 1;
+    }
+
+    for (int i = 0; i < BB.size(); i++) {
+        if (BB[i]->fuse < 0) {
+            Sphere* explosion = new Sphere(BB[i]->curPos(0), BB[i]->curPos(1), BB[i]->curPos(2), 1.0, 1.0);
+            explosion->setFuse(2);
+            Explosions.push_back(explosion);
+            for (int j = 0; j < BB.size(); j++) {
+                if (i == j)
+                    continue;
+                Eigen::Vector3d blast = (BB[j]->curPos - BB[i]->curPos);
+                Eigen::Vector3d blast_Direction = blast.normalized();
+                double blast_dist = blast.norm();
+                BB[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
+            }
+            for (int j = 0; j < SS.size(); j++) {
+                Eigen::Vector3d blast = (SS[j]->curPos - BB[i]->curPos);
+                Eigen::Vector3d blast_Direction = blast.normalized();
+                double blast_dist = blast.norm();
+                SS[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
+            }
+            BB.erase(BB.begin() + i);
+        } else {
+            BB[i]->fuse -= 1;
+        } 
+    }
+} 
 
 void ParticleSystem::TimeStep() {
     //Check for explosions first and set explosions
-    // for (int i = 0; i < BB.size(); i++) {
-    //     if (BB[i]->explosion_time < 0) {
-    //         Sphere *s = BB[i];
-    //         BB.erase(BB.begin() + i);
-    //         for (int j = 0; j < BB.size(); j++) {
-    //             Eigen::Vector3d blast = (BB[j]->curPos - s->curPos);
-    //             Eigen::Vector3d blast_Direction = blast.normalized();
-    //             double blast_Magnitude = blast.norm();
-    //             BB[j]->applyForce(80 * blast_Direction/(blast_Magnitude * blast_Magnitude));
-    //         }
-    //         for (int j = 0; j < SS.size(); j++) {
-    //             Eigen::Vector3d blast = (SS[j]->curPos - s->curPos);
-    //             Eigen::Vector3d blast_Direction = blast.normalized();
-    //             double blast_Magnitude = blast.norm();
-    //             SS[j]->applyForce(80 * blast_Direction/(blast_Magnitude * blast_Magnitude));
-    //         }
-    //     }
-    // }
+    ComputeExplosions(); 
     Verlet();
     for (int i = 0; i < 10; i++){
         SatisfyConstraints();
@@ -789,13 +742,13 @@ void ParticleSystem::SatisfyConstraints() {
         (*si)->constraints(box_corner, box_corner+box_dims);
     }
 
-    // for (int j = 0; j < BB.size(); j++) {
-    //     BB[j]->constraints(box_corner, box_corner+box_dims);
-    //     BB[j]->sphereCollisionConstraints(BB);
-    //     BB[j]->cylinderCollisionConstraints(CC);
-    // }
+    for (int j = 0; j < BB.size(); j++) {
+        BB[j]->constraints(box_corner, box_corner+box_dims);
+        BB[j]->sphereCollisionConstraints(BB);
+    }
     for (int i = 0; i < CC.size(); i++){
         CC[i]->constraints(CC, i);
+        CC[i]->sphereCollisionConstraints(BB);
     }
 
     vector<Link*>::iterator li;
@@ -844,7 +797,7 @@ void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
 void ParticleSystem::FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag){
     for (int i = 0; i < this->CC.size(); i++){
         Eigen::Vector3d intersect;
-        Eigen::Vector3d end = start + 9000*dir;
+        Eigen::Vector3d end = start + 9001*dir;
         bool does_intersect = this->CC[i]->LineIntersect(start, end, intersect);
         if (!does_intersect)
             continue;
