@@ -57,7 +57,7 @@ Viewport viewport;
 int windowID;
 
 double cam_rot_x = 0, cam_rot_y = 0;
-double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 10;
+double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
 bool perspective;
 bool fire = false;
@@ -76,6 +76,7 @@ vector<Eigen::Vector3d> box_verts;
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
 GLfloat black[] = {0.0, 0.0, 0.0};
 GLfloat white[] = {1.0, 1.0, 1.0};
+GLfloat red[] = {1.0, 0.0, 0.0};
 GLfloat new_tan_ambient[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
 GLfloat new_tan_diffuse[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
 GLfloat new_tan_specular[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
@@ -104,25 +105,22 @@ void myKeys(unsigned char key, int x, int y) {
 		exit(0);
 		break;
 	case W_KEY:
-		cam_pos_x -= sin(cam_rot_y)*0.5;
-		cam_pos_z -= cos(cam_rot_y)*0.5;
-		break;
-	case A_KEY:
-		cam_pos_x -= sin(PI/2+cam_rot_y)*0.5;
-		cam_pos_z -= cos(PI/2+cam_rot_y)*0.5;
-		break;
-	case S_KEY:
-        cam_pos_x += sin(cam_rot_y)*0.5;
+		cam_pos_x += sin(cam_rot_y)*0.5;
 		cam_pos_z += cos(cam_rot_y)*0.5;
 		break;
-	case D_KEY:
-        cam_pos_x += sin(PI/2+cam_rot_y)*0.5;
+	case A_KEY:
+		cam_pos_x += sin(PI/2+cam_rot_y)*0.5;
 		cam_pos_z += cos(PI/2+cam_rot_y)*0.5;
 		break;
+	case S_KEY:
+        cam_pos_x -= sin(cam_rot_y)*0.5;
+		cam_pos_z -= cos(cam_rot_y)*0.5;
+		break;
+	case D_KEY:
+        cam_pos_x -= sin(PI/2+cam_rot_y)*0.5;
+		cam_pos_z -= cos(PI/2+cam_rot_y)*0.5;
+		break;
     case SPACEBAR:
-        bullet_start << -cam_pos_x, -cam_pos_y-1, -cam_pos_z;
-        bullet_dir << sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y);
-        bullet_dir.normalize();
         ps.FireRay(bullet_start, bullet_dir, 5);
         fire = true;
         break;
@@ -206,24 +204,54 @@ void drawBox(){
 
 } 
 
-void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& dir){
-    Eigen::Vector3d end = start + 9000*dir;
+void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& end){
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
+
+void drawCrosshairs(){
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, viewport.w, viewport.h, 0, -1,1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glDisable(GL_CULL_FACE);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    double cx = viewport.w/2;
+    double cy = viewport.h/2;
+    double cross_size = 20;
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
+    
+    glBegin(GL_LINES);
+    glLineWidth(5.0);
+    glVertex2f(cx - cross_size, cy);
+    glVertex2f(cx + cross_size, cy);
+    glVertex2f(cx, cy - cross_size);
+    glVertex2f(cx, cy + cross_size);
+    glEnd();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+} 
 
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glLoadIdentity();              				         // reset transformations
 
-    glLoadIdentity();
     gluPerspective(120.0, 1.0, 1.0, 50.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glRotatef(-cam_rot_x*180/PI, 1.0, 0.0, 0.0);
     glRotatef(-cam_rot_y*180/PI, 0.0, 1.0, 0.0);
-    gluLookAt(-cam_pos_x, -cam_pos_y, -cam_pos_z, // lookfrom
-              -cam_pos_x, -cam_pos_y,  -cam_pos_z + 9, // lookat
+    gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, // lookfrom
+              cam_pos_x, cam_pos_y, cam_pos_z+0.001, // lookat
               0.0, 1.0,  0.0); // up
 
 	glEnable(GL_DEPTH_TEST);
@@ -243,10 +271,12 @@ void myDisplay() {
     GLdouble r = 0.1;
     GLint slices = 20;
     GLint stacks = 20;
+
+    glPushMatrix();
     
     // Render Box
     drawBox();
-     
+
     // Render Body
     int subdiv = 20;
     for (int i = 0; i < buddy.body_parts.size(); i++){
@@ -256,11 +286,19 @@ void myDisplay() {
                                   l->r, subdiv);
     }
     ps.TimeStep();
-    
+
+    bullet_start << cam_pos_x, cam_pos_y, cam_pos_z;
+    bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
+    Eigen::Vector3d bullet_start_draw(cam_pos_x, cam_pos_y-1, cam_pos_z);
+    Eigen::Vector3d bullet_end = bullet_start + 9001*bullet_dir;
+
     if (fire){
-        drawBullet(bullet_start, bullet_dir);
+        drawBullet(bullet_start_draw, bullet_end);
         fire = false;
     }
+    
+    glPopMatrix();
+    drawCrosshairs();
 
     glFlush();
     glutSwapBuffers();

@@ -249,7 +249,6 @@ class Cylinder{
             Eigen::Vector3d AOxAB = AO.cross(AB);
             Eigen::Vector3d VxAB  = line_dir.cross(AB);
 
-
             double ab2 = AB.dot(AB);
             double a = VxAB.dot(VxAB);
             double b = 2 * VxAB.dot(AOxAB);
@@ -666,7 +665,7 @@ void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
 void ParticleSystem::FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag){
     for (int i = 0; i < this->CC.size(); i++){
         Eigen::Vector3d intersect;
-        Eigen::Vector3d end = start + 9000*dir;
+        Eigen::Vector3d end = start + 9001*dir;
         bool does_intersect = this->CC[i]->LineIntersect(start, end, intersect);
         if (!does_intersect)
             continue;
