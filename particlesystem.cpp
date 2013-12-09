@@ -241,42 +241,42 @@ class Cylinder{
 void Sphere::cylinderCollisionConstraints(vector<Cylinder*>& body_parts) {
     vector<Cylinder*>::iterator ci;
     for (int i = 0; i < body_parts.size(); i++) {
-      Cylinder *cyl = body_parts[i];
-      Sphere *s1 = cyl->node1;
-      Sphere *s2 = cyl->node2;
-      Eigen::Vector3d n1ton2 = s2->curPos - s1->curPos;
-      Eigen::Vector3d n1tocenter = curPos - s1->curPos;
-      Eigen::Vector3d n2tocenter = curPos - s2->curPos;
+        Cylinder *cyl = body_parts[i];
+        Sphere *s1 = cyl->node1;
+        Sphere *s2 = cyl->node2;
+        Eigen::Vector3d n1ton2 = s2->curPos - s1->curPos;
+        Eigen::Vector3d n1tocenter = curPos - s1->curPos;
+        Eigen::Vector3d n2tocenter = curPos - s2->curPos;
 
-      double projection_distance = n1tocenter.dot(n1ton2);
-      double cylinder_length = n1ton2.dot(n1ton2);
+        double projection_distance = n1tocenter.dot(n1ton2);
+        double cylinder_length = n1ton2.dot(n1ton2);
       
-      if (projection_distance >= cylinder_length) {
-	//Found out that closest sphere is s2
-	Sphere *closestSphere = s2;
-	if (n2tocenter.norm() <= s2->radius + radius) {
-	  //find the collision normal
-	  Eigen::Vector3d collision_normal = (curPos - s2->curPos).normalized();
-	  //Do sphere-sphere intersection calculation?
-	}
-      } else if (projection_distance <= 0) {
-	//Found out that closest sphere is s1
-	Sphere *closestSphere = s1;
-	if (n1tocenter.norm() <= s1->radius + radius) {
-	  Eigen::Vector3d collision_normal = (curPos - s1->curPos).normalized();
-	  //find the collision normal
-	  //Do sphere-sphere intersection calculation?
-	}
-      } else {
-	//Found out that the sphere intersects with the cylindrical part
+        if (projection_distance >= cylinder_length) {
+	       //Found out that closest sphere is s2
+	       Sphere *closestSphere = s2;
+	       if (n2tocenter.norm() <= s2->radius + radius) {
+	           //find the collision normal
+	           Eigen::Vector3d collision_normal = (curPos - s2->curPos).normalized();
+	           //Do sphere-sphere intersection calculation?
+	        }
+        } else if (projection_distance <= 0) {
+	       //Found out that closest sphere is s1
+	       Sphere *closestSphere = s1;
+	       if (n1tocenter.norm() <= s1->radius + radius) {
+	           Eigen::Vector3d collision_normal = (curPos - s1->curPos).normalized();
+	           //find the collision normal
+	           //Do sphere-sphere intersection calculation?
+	       }
+        } else {
+	       //Found out that the sphere intersects with the cylindrical part
 	
-	//Find the closest point on the line segment
-	Eigen::Vector3d closestPoint = n1ton2.normalized()  * projection_distance/cylinder_length;
-	if ((curPos - closestPoint).norm() <= radius + cyl->r) {
-	  //find the collision normal
-	  Eigen::Vector3d collision_normal = (curPos - closestPoint).normalized();
-	}
-      }
+	       //Find the closest point on the line segment
+	       Eigen::Vector3d closestPoint = n1ton2.normalized()  * projection_distance/cylinder_length;
+	       if ((curPos - closestPoint).norm() <= radius + cyl->r) {
+	           //find the collision normal
+	           Eigen::Vector3d collision_normal = (curPos - closestPoint).normalized();
+	       }
+        }
     }
 }
 class Link {
