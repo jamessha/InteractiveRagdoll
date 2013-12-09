@@ -17,6 +17,7 @@ class Sphere {
         Eigen::Vector3d oldPos, curPos, acc;
         double radius;
         double mass;
+        double explosion_time;
 
         Sphere(){}
 
@@ -36,6 +37,13 @@ class Sphere {
         void setAcc(double accx, double accy, double accz){
             this->acc << accx, accy, accz;
         } 
+        void applyForce(Eigen::Vector3d force) {
+            this->acc = this->acc + force/mass;
+        }
+
+        void setExpTime(double time) {
+            this->explosion_time = time;
+        }
 
         void zeroAcc(){
             this->acc << 0, 0, 0;
@@ -401,7 +409,7 @@ class SoftAngle : public Angle {
     public:
         SoftAngle() {}
 
-        SoftAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link * l5, double angle) {
+        SoftAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, double angle) {
             //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
             //into the above diagram.
             if (l1->s1 == l2->s1) {
@@ -434,8 +442,18 @@ class SoftAngle : public Angle {
             this->const_angle = angle;
         }
 
+        SoftAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, double angle) {
+            s1 = ss1;
+            s2 = ss2;
+            s3 = ss3;
+            s4 = ss4;
+            this->const_angle = angle;
+        }
+
         void constraints() {
             //Variables for max angle position
+            // cout << "Being Rotation constraint" << endl;
+            // cout << "const angle " << this->const_angle << endl;
             Eigen::Vector3d maxPos;
             Eigen::Matrix3d rotation;
             Eigen::Vector3d diff;
@@ -453,21 +471,29 @@ class SoftAngle : public Angle {
             //use dotproduct cosine relation to find angle (in degrees), unfortunately limited to 0-180 degrees so need
             //to use up vector (calculated above) to enlarge to 360 degrees.
             double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
+            // cout << "initial angle " << angle << endl;
             if ( orientation < 0 ) {
                 angle = angle + 180;
             }
             if (angle > const_angle && (v1.normalized() != v2.normalized())) {
                 //See Wikipedia for arbitrary axis rotation matrix
-                cosa = cos(const_angle); sina = sin(const_angle); mcosa = 1 - cosa; msina = 1 - sina;
+                // cout << "angle " << angle << endl;
+                double rotation_amount = const_angle - angle;
+                // cout << "rotation_amount " << rotation_amount << endl;
+                cosa = cos(rotation_amount * 3.1415926535/180); sina = sin(rotation_amount * 3.1415926535/180); mcosa = 1 - cosa; msina = 1 - sina;
                 rotation << 
                     cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
                     s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
                     s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                // cout << "rotation matrix" << endl;
+                // cout << rotation << endl;
                 maxPos = rotation * s1->curPos;
                 diff = maxPos - s4->curPos;
                 s4->curPos = maxPos;
                 s4->oldPos = s4->oldPos + diff;
+                //s4->curPos = Eigen::Vector3d(0.5, 0.5, 0.5);
             }
+            // cout << "End rotation constraint" << endl;
         }
 
 
@@ -557,6 +583,25 @@ void ParticleSystem::Verlet () {
 }
 
 void ParticleSystem::TimeStep() {
+    //Check for explosions first and set explosions
+    for (int i = 0; i < BB.size(); i++) {
+        if (BB[i]->explosion_time < 0) {
+            Sphere *s = BB[i];
+            BB.erase(BB.begin() + i);
+            for (int j = 0; j < BB.size(); j++) {
+                Eigen::Vector3d blast = (BB[j]->curPos - s->curPos);
+                Eigen::Vector3d blast_Direction = blast.normalized();
+                double blast_Magnitude = blast.norm();
+                BB[j]->applyForce(80 * blast_Direction/(blast_Magnitude * blast_Magnitude));
+            }
+            for (int j = 0; j < SS.size(); j++) {
+                Eigen::Vector3d blast = (SS[j]->curPos - s->curPos);
+                Eigen::Vector3d blast_Direction = blast.normalized();
+                double blast_Magnitude = blast.norm();
+                SS[j]->applyForce(80 * blast_Direction/(blast_Magnitude * blast_Magnitude));
+            }
+        }
+    }
     Verlet();
     for (int i = 0; i < 10; i++){
         SatisfyConstraints();
