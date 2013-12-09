@@ -37,6 +37,7 @@ void junk(){
 #define ESCAPE 27
 #define W_KEY 119
 #define A_KEY  97
+#define B_KEY  98
 #define S_KEY 115
 #define D_KEY 100
 #define SPACEBAR 32
@@ -60,9 +61,8 @@ double cam_rot_x = 0, cam_rot_y = 0;
 double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
 bool perspective;
-bool fire = false;
-Eigen::Vector3d bullet_start;
-Eigen::Vector3d bullet_dir;
+bool fire_primary = false;
+bool fire_secondary = false;
 bool DEBUG;
 
 Buddy buddy;
@@ -187,8 +187,10 @@ void myKeys(unsigned char key, int x, int y) {
         }
 		break;
     case SPACEBAR:
-        ps.FireRay(bullet_start, bullet_dir, 5);
-        fire = true;
+        fire_primary = true;
+        break;
+    case B_KEY:
+        fire_secondary = true;
         break;
 	}
 }
@@ -207,6 +209,23 @@ void myMouse(int x, int y) {
 	cam_rot_y -= atan2((double) x-prev_x, 1)*0.1;
 	prev_x = x;
 	prev_y = y;
+}
+
+void onMouseButton(int button, int state, int x, int y) {
+  switch(button) {
+  case GLUT_LEFT_BUTTON:
+    if (state == GLUT_DOWN)
+        fire_primary=true;
+    else if (state == GLUT_UP)
+        fire_primary=false;
+    break;
+  case GLUT_RIGHT_BUTTON:
+    if (state == GLUT_DOWN)
+        fire_secondary=true;
+    else if (state == GLUT_UP)
+        fire_secondary=false;
+    break;
+  }
 }
 
 // reshape viewport if the window is resized
@@ -271,7 +290,7 @@ void drawBox(){
 
 } 
 
-void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& end){
+void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
@@ -382,20 +401,57 @@ void myDisplay() {
                                   l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
                                   l->r, subdiv);
     }
-    ps.TimeStep();
-    
+
     Eigen::Vector3d bullet_start_draw;
     bullet_start_draw << sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x, 
                          -cos(cam_rot_x)+cam_pos_y, 
                          sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z;
-    bullet_start << cam_pos_x, cam_pos_y, cam_pos_z;
+    Eigen::Vector3d bullet_start(cam_pos_x, cam_pos_y, cam_pos_z);
+    Eigen::Vector3d bullet_dir;
     bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
+    bullet_dir.normalize();
     Eigen::Vector3d bullet_end = bullet_start + 9001*bullet_dir;
 
-    if (fire){
-        drawBullet(bullet_start_draw, bullet_end);
-        fire = false;
+    if (fire_primary){
+        drawRay(bullet_start_draw, bullet_end);
+        ps.FireRay(bullet_start, bullet_dir, 5);
+        fire_primary = false;
     }
+
+    // Render all explosives
+    for (int i = 0; i < ps.BB.size(); i++){
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
+
+        glTranslatef(ps.BB[i]->curPos[0], ps.BB[i]->curPos[1], ps.BB[i]->curPos[2]);
+        glutSolidSphere(ps.BB[i]->radius, slices, stacks);
+        glTranslatef(-ps.BB[i]->curPos[0], -ps.BB[i]->curPos[1], -ps.BB[i]->curPos[2]);
+    } 
+    // Render all explosions
+    for (int i = 0; i < ps.Explosions.size(); i++){
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
+
+
+        glTranslatef(ps.Explosions[i]->curPos[0], ps.Explosions[i]->curPos[1], ps.Explosions[i]->curPos[2]);
+        glutSolidSphere(ps.Explosions[i]->radius, slices, stacks);
+        glTranslatef(-ps.Explosions[i]->curPos[0], -ps.Explosions[i]->curPos[1], -ps.Explosions[i]->curPos[2]);
+    }
+
+    if (fire_secondary){
+        Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
+        Eigen::Vector3d oldPos = curPos - bullet_dir;
+        Sphere* explosive = new Sphere(curPos(0), curPos(1), curPos(2),
+                                       0.5, 1.0);
+        explosive->oldPos = oldPos;
+        explosive->setFuse(200);
+        ps.BB.push_back(explosive);
+
+        fire_secondary = false;
+    } 
+    ps.TimeStep();
     
     glPopMatrix();
     drawCrosshairs();
@@ -420,6 +476,7 @@ int main(int argc, char *argv[]) {
     glutReshapeFunc(myReshape);				// function to run when the window gets resized
     glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
+    glutMouseFunc(onMouseButton);
 
 	glEnable(GL_DEPTH_TEST);                // enable z-buffer depth test
 	glShadeModel(GL_SMOOTH);
