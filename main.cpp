@@ -63,6 +63,7 @@ bool perspective;
 bool fire = false;
 Eigen::Vector3d bullet_start;
 Eigen::Vector3d bullet_dir;
+bool DEBUG;
 
 Buddy buddy;
 Eigen::Vector3d box_corner(-10, -10, -10);
@@ -71,6 +72,7 @@ ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
                   0.05);
 vector<Eigen::Vector3d> box_verts;
+Eigen::Vector3d gravAcc(0.0, -9.0, 0.0);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -86,46 +88,110 @@ GLfloat shininess[] = {8.0};
 
 // function that sets up global variables etc
 void initializeVars() {
-    viewport.w = 800;
-    viewport.h = 800;
-    perspective = true;  //on default, perspective is turned on. This is just for testing out purposes later.
+    perspective = false;  //on default, perspective is turned on. This is just for testing out purposes later.
+    DEBUG = true;
+    if(DEBUG){
+      viewport.w = 1440;
+      viewport.h = 880;
+    }
+    else{
+      viewport.w = 800;
+      viewport.h = 800;
+    }
     ps.GetBox(box_verts);
-    ps.setAcc(0.0, -9, 0.0);
+    ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
     ps.SS = buddy.joints;
     ps.LL = buddy.limbs;
     ps.CC = buddy.body_parts;
+
+    /*if(DEBUG){  //write out the box vertices
+      ofstream myfile;
+      myfile.open ("log.txt");
+      myfile << "Writing this to a file.\n";
+      myfile << "Vertex 1: " << box_verts[0](0) << ", " << box_verts[0](1) << ", " << box_verts[0](2) << "\n";
+      myfile << "Vertex 2: " << box_verts[1](0) << ", " << box_verts[1](1) << ", " << box_verts[1](2) << "\n";
+      myfile << "Vertex 3: " << box_verts[2](0) << ", " << box_verts[2](1) << ", " << box_verts[2](2) << "\n";
+      myfile << "Vertex 4: " << box_verts[3](0) << ", " << box_verts[3](1) << ", " << box_verts[3](2) << "\n";
+      myfile << "Vertex 5: " << box_verts[4](0) << ", " << box_verts[4](1) << ", " << box_verts[4](2) << "\n";
+      myfile << "Vertex 6: " << box_verts[5](0) << ", " << box_verts[5](1) << ", " << box_verts[5](2) << "\n";
+      myfile << "Vertex 7: " << box_verts[6](0) << ", " << box_verts[6](1) << ", " << box_verts[6](2) << "\n";
+      myfile << "Vertex 8: " << box_verts[7](0) << ", " << box_verts[7](1) << ", " << box_verts[7](2) << "\n";
+      myfile.close();
+    }*/
+}
+
+bool withinBoxBoundry(double pos_x, double pos_z){
+  double min_range = box_corner(0);
+  double max_range = min_range+box_dims(0);
+  double reality_check = .9;  //when without this value, the camera makes it seem like im still outside of it. I'm going to see if this changes anything
+  //min_range *= reality_check;
+  //max_range *= reality_check; 
+
+  /*if(DEBUG){  //write out the box vertices
+      ofstream myfile;
+      myfile.open ("withinBoxBoundry.txt");
+      myfile << "Writing this to a file.\n";
+      myfile << "pos_x: "  << pos_x << "\n";
+      myfile << "pos_z: "<< pos_z<< ".\n";
+      myfile.close();
+  }*/
+
+  if(pos_x >= min_range +1 && pos_x <= max_range -1&& pos_z >= min_range+1 && pos_z <= max_range -1){
+    return true;
+  }
+  else{
+    return false;
+  }
 }
 
 // function that handles keyboard events
 void myKeys(unsigned char key, int x, int y) {
-	switch(key) {
+	double temp_cam_pos_x = 0;
+  double temp_cam_pos_z = 0;
+  switch(key) {
 	case ESCAPE:
 		glutDestroyWindow(windowID);
 		exit(0);
 		break;
 	case W_KEY:
-		cam_pos_x -= sin(cam_rot_y)*0.5;
-		cam_pos_z -= cos(cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
+		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
 		break;
 	case A_KEY:
-		cam_pos_x -= sin(PI/2+cam_rot_y)*0.5;
-		cam_pos_z -= cos(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
 		break;
 	case S_KEY:
-        cam_pos_x += sin(cam_rot_y)*0.5;
-		cam_pos_z += cos(cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
+		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
 		break;
 	case D_KEY:
-        cam_pos_x += sin(PI/2+cam_rot_y)*0.5;
-		cam_pos_z += cos(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
 		break;
-    case SPACEBAR:
-        bullet_start << -cam_pos_x, -cam_pos_y-1, -cam_pos_z;
-        bullet_dir << sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y);
-        bullet_dir.normalize();
-        ps.FireRay(bullet_start, bullet_dir, 5);
-        fire = true;
-        break;
+  case SPACEBAR:
+      bullet_start << -cam_pos_x, -cam_pos_y-1, -cam_pos_z;
+      bullet_dir << sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y);
+      bullet_dir.normalize();
+      ps.FireRay(bullet_start, bullet_dir, 5);
+      fire = true;
+      break;
 	}
 }
 
@@ -204,6 +270,7 @@ void drawBox(){
                               box_verts[7](0), box_verts[7](1), box_verts[7](2),
                               radius, slices);
 
+
 } 
 
 void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& dir){
@@ -211,9 +278,38 @@ void drawBullet(Eigen::Vector3d& start, Eigen::Vector3d& dir){
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
 
+void drawAcc(){
+  //this method draws a triangle based on the acc. This is to debug and make sure the grav moves along with the movement of the box
+  glBegin(GL_TRIANGLES);
+        glColor3f(0.7, 0.0, 0.0);
+        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
+        glVertex3f(-1, 0, 1);
+        glVertex3f(1, 0, 1);
+
+        glColor3f(0.0, 0.7, 0.0);
+        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
+        glVertex3f(-1, 0, 1);
+        glVertex3f(-1, 0, -1);
+
+        glColor3f(0.0, 0.0, 0.7);
+        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
+        glVertex3f(-1, 0, -1);
+        glVertex3f(1, 0, -1);
+
+        glColor3f(0.7, 0.7, 0.7);
+        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
+        glVertex3f(1, 0, 1);
+        glVertex3f(1, 0, -1);
+
+  glEnd();
+
+}
+
+
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
+    glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();              				         // reset transformations
 
     glLoadIdentity();
@@ -246,6 +342,8 @@ void myDisplay() {
     
     // Render Box
     drawBox();
+    ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
+    //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
      
     // Render Body
     int subdiv = 20;
