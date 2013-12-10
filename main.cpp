@@ -474,7 +474,7 @@ void myDisplay() {
     // Render Box
     drawBox();
 
-    ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
+    //ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
     //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
      
     // Render Body

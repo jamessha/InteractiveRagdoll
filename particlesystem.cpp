@@ -46,7 +46,7 @@ class Sphere {
         void Verlet(double dtimestep, Eigen::Vector3d& world_acc) {
             //cout << curPos.transpose() << endl;
             Eigen::Vector3d temp = curPos;
-            curPos = 2*curPos-oldPos + (acc+world_acc)*dtimestep*dtimestep;
+            curPos = curPos + (1.0-1e-5)*(curPos-oldPos) + (acc+world_acc)*dtimestep*dtimestep;
             oldPos = temp;
             acc = Eigen::Vector3d(0,0,0);
         }
@@ -89,62 +89,75 @@ class Sphere {
                 double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = (minx - curPos[0]) + minx;
                 oldPos[0] = curPos[0] + 0.2*x_dist;
-                // Degrade other motion from friction
-                double y_dir = curPos[1] - oldPos[1];
-                double z_dir = curPos[2] - oldPos[2];
-                oldPos[1] = curPos[1] - 0.5*y_dir;
-                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (x > maxx) {
                 double x_dist = curPos[0] - oldPos[0];
                 curPos[0] = maxx - (curPos[0] - maxx);
                 oldPos[0] = curPos[0] + 0.2*x_dist;
-                // Degrade other motion from friction
-                double y_dir = curPos[1] - oldPos[1];
-                double z_dir = curPos[2] - oldPos[2];
-                oldPos[1] = curPos[1] - 0.5*y_dir;
-                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (y < miny) {
                 double y_dist = curPos[1] - oldPos[1];
                 curPos[1] = (miny - curPos[1]) + miny;
                 oldPos[1] = curPos[1] + 0.2*y_dist;
-                // Degrade other motion from friction
-                double x_dir = curPos[0] - oldPos[0];
-                double z_dir = curPos[2] - oldPos[2];
-                oldPos[0] = curPos[0] - 0.5*x_dir;
-                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (y > maxy) {
                 double y_dist = curPos[1] - oldPos[1];
                 curPos[1] = maxy - (curPos[1] - maxy);
                 oldPos[1] = curPos[1] + 0.2*y_dist;
-                // Degrade other motion from friction
-                double x_dir = curPos[0] - oldPos[0];
-                double z_dir = curPos[2] - oldPos[2];
-                oldPos[0] = curPos[0] - 0.5*x_dir;
-                oldPos[2] = curPos[2] - 0.5*z_dir;
             }
             if (z < minz) {
                 double z_dist = curPos[2] - oldPos[2];
                 curPos[2] = (minz - curPos[2]) + minz;
                 oldPos[2] = curPos[2] + 0.2*z_dist;
-                // Degrade other motion from friction
-                double x_dir = curPos[0] - oldPos[0];
-                double y_dir = curPos[1] - oldPos[1];
-                oldPos[0] = curPos[0] - 0.5*x_dir;
-                oldPos[1] = curPos[1] - 0.5*y_dir;
             }
             if (z > maxz) {
                 double z_dist = curPos[2] - oldPos[2];
                 curPos[2] = maxz - (curPos[2] - maxz);
                 oldPos[2] = curPos[2] + 0.2*z_dist;
+            }
+            
+            if (x < minx + 0.5){
+                // Degrade other motion from friction
+                double y_dir = curPos[1] - oldPos[1];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[1] = curPos[1] - 0.3*y_dir;
+                oldPos[2] = curPos[2] - 0.3*z_dir;
+            } 
+            if (x > maxx - 0.5){
+                // Degrade other motion from friction
+                double y_dir = curPos[1] - oldPos[1];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[1] = curPos[1] - 0.3*y_dir;
+                oldPos[2] = curPos[2] - 0.3*z_dir;
+            } 
+            if (y < miny + 0.5){
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[0] = curPos[0] - 0.3*x_dir;
+                oldPos[2] = curPos[2] - 0.3*z_dir;
+            } 
+            if (y > maxy - 0.5){
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double z_dir = curPos[2] - oldPos[2];
+                oldPos[0] = curPos[0] - 0.3*x_dir;
+                oldPos[2] = curPos[2] - 0.3*z_dir;
+            } 
+            if (z < minz + 0.5){
                 // Degrade other motion from friction
                 double x_dir = curPos[0] - oldPos[0];
                 double y_dir = curPos[1] - oldPos[1];
-                oldPos[0] = curPos[0] - 0.5*x_dir;
-                oldPos[1] = curPos[1] - 0.5*y_dir;
-            }
+                oldPos[0] = curPos[0] - 0.3*x_dir;
+                oldPos[1] = curPos[1] - 0.3*y_dir;
+            } 
+            if (z > maxz - 0.5){
+                // Degrade other motion from friction
+                double x_dir = curPos[0] - oldPos[0];
+                double y_dir = curPos[1] - oldPos[1];
+                oldPos[0] = curPos[0] - 0.3*x_dir;
+                oldPos[1] = curPos[1] - 0.3*y_dir;
+            } 
         }
 
         bool sphereIntersect(Sphere* other){
@@ -267,27 +280,29 @@ class Cylinder{
                 double B_norm = (other_cur_mid - other_old_mid).norm();
                 
                 // Some approximate math to get new directions
-                Eigen::Vector3d C = A+B;
+                double total_norm = A_norm + B_norm;
                 Eigen::Vector3d D = (this_cur_mid - other_cur_mid).normalized();
                 Eigen::Vector3d E = (other_cur_mid - this_cur_mid).normalized();
+                double this_mass = (this->node1->mass + this->node2->mass);
+                double other_mass = (body_parts[i]->node1->mass + body_parts[i]->node2->mass);
+                double w1 = 1 - this_mass/(this_mass + other_mass);
+                double w2 = 1 - other_mass/(this_mass + other_mass);
 
-                Eigen::Vector3d this_node1_v = ((this->node1->curPos - this->node1->oldPos).normalized() + 0.1*D).normalized();
-                double this_node1_mag = (this->node1->curPos - this->node1->oldPos).norm();
-                Eigen::Vector3d this_node2_v = ((this->node2->curPos - this->node2->oldPos).normalized() + 0.1*D).normalized();
-                double this_node2_mag = (this->node2->curPos - this->node2->oldPos).norm();
-                Eigen::Vector3d other_node1_v = ((body_parts[i]->node1->curPos - body_parts[i]->node1->oldPos).normalized() + 0.1*E).normalized();
-                double other_node1_mag = (body_parts[i]->node1->curPos - body_parts[i]->node1->oldPos).norm();
-                Eigen::Vector3d other_node2_v = ((body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).normalized() + 0.1*E).normalized();
-                double other_node2_mag = (body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).norm();
+                Eigen::Vector3d this_node1_v = (this->node1->curPos - this->node1->oldPos) + w1*total_norm*D;
+                //cout << (this->node1->curPos - this->node1->oldPos).transpose() << endl << endl;
+                //cout << this_node1_v.transpose() << endl << endl;
+                Eigen::Vector3d this_node2_v = (this->node2->curPos - this->node2->oldPos) + w1*total_norm*D;
+                Eigen::Vector3d other_node1_v = (body_parts[i]->node1->curPos - body_parts[i]->node1->oldPos) + w2*total_norm*E;
+                Eigen::Vector3d other_node2_v = (body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos) + w2*total_norm*E;
                
                 this->node1->curPos += D*this->r;
                 this->node2->curPos += D*this->r;
-                this->node1->oldPos = this->node1->curPos - this_node1_mag*this_node1_v;
-                this->node2->oldPos = this->node2->curPos - this_node2_mag*this_node2_v;
+                this->node1->oldPos = this->node1->curPos - 0.5*this_node1_v;
+                this->node2->oldPos = this->node2->curPos - 0.5*this_node2_v;
                 body_parts[i]->node1->curPos += E*body_parts[i]->r;
                 body_parts[i]->node2->curPos += E*body_parts[i]->r;
-                body_parts[i]->node1->oldPos = body_parts[i]->node1->curPos - other_node1_mag*other_node1_v;
-                body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - other_node2_mag*other_node2_v;
+                body_parts[i]->node1->oldPos = body_parts[i]->node1->curPos - 0.5*other_node1_v;
+                body_parts[i]->node2->oldPos = body_parts[i]->node2->curPos - 0.5*other_node2_v;
             }
         }
 
@@ -402,8 +417,8 @@ class HardLink : public Link {
                 Eigen::Vector3d s2s1 = -(vec.normalized());
                 (*s1).curPos = (*s1).curPos + weight1*ext_dist*s1s2;
                 (*s2).curPos = (*s2).curPos + weight2*ext_dist*s2s1;
-                (*s1).oldPos = (*s1).oldPos + weight1*ext_dist*s1s2;
-                (*s2).oldPos = (*s2).oldPos + weight2*ext_dist*s2s1;
+                (*s1).oldPos = (*s1).oldPos + 0.6*weight1*ext_dist*s1s2;
+                (*s2).oldPos = (*s2).oldPos + 0.6*weight2*ext_dist*s2s1;
             }
             return ext_dist;
         }
@@ -857,6 +872,10 @@ void ParticleSystem::SatisfyConstraints() {
 
     for (int i = 0; i < CC.size(); i++){
         CC[i]->constraints(CC, i);
+        Eigen::Vector3d adjusted_corner = box_corner + Eigen::Vector3d(CC[i]->r, CC[i]->r, CC[i]->r);
+        Eigen::Vector3d adjusted_dims = box_dims - Eigen::Vector3d(CC[i]->r, CC[i]->r, CC[i]->r);
+        CC[i]->node1->boundaryConstraints(adjusted_corner, adjusted_dims);
+        CC[i]->node2->boundaryConstraints(adjusted_corner, adjusted_dims);
         for (int j = 0; j < grenades.size(); j++)
             CC[i]->sphereCollisionConstraints(grenades[j]);
         for (int j = 0; j < rockets.size(); j++)
@@ -872,9 +891,9 @@ void ParticleSystem::SatisfyConstraints() {
         }
     }
 
-    for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
-        (*ai)->constraints();
-    }
+    //for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
+    //    (*ai)->constraints();
+    //}
 }
 
 void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
