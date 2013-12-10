@@ -123,6 +123,7 @@ void initializeVars() {
     ps.SS = buddy.joints;
     ps.LL = buddy.limbs;
     ps.CC = buddy.body_parts;
+    ps.AA = buddy.joint_angles;
 
     /*if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -220,6 +221,7 @@ void myKeys(unsigned char key, int x, int y) {
         primary = "rockets";
         break;
 	}
+	glutPostRedisplay();
 }
 
 // function that handles special key events
@@ -427,6 +429,10 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
+    glRotatef(cam_rot_x, 1.0, 0.0, 0.0);
+    glRotatef(cam_rot_y, 0.0, 1.0, 0.0);
+    glTranslatef(cam_pos_x, cam_pos_y, cam_pos_z);
+	
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
@@ -519,6 +525,7 @@ void myDisplay() {
 }
 
 int main(int argc, char *argv[]) {
+
     initializeVars();
 
     glutInit(&argc, argv);
