@@ -517,9 +517,17 @@ class SoftAngle : public Angle {
             //Variables for max angle position
             // cout << "Being Rotation constraint" << endl;
             // cout << "const angle " << this->const_angle << endl;
-            cout << "" << endl;
-            cout << "angle constraints" << endl;
-            cout << "const_angle " << const_angle << endl;
+            // cout << "" << endl;
+            // cout << "angle constraints" << endl;
+            // cout << "const_angle " << const_angle << endl;
+            // cout << "SPHERES" << endl;
+            // cout << s1->curPos.transpose() << endl;
+            // cout << s2->curPos.transpose() << endl;
+            // cout << s3->curPos.transpose() << endl;
+            // cout << s4->curPos.transpose() << endl;
+            // cout << "SPHERES END" << endl;
+
+            // cout << "s1s2 magnitude before " << (s1->curPos - s2->curPos).norm() << endl;
 
             Eigen::Vector3d hingeCenter = (s2->curPos - s3->curPos)/2 + s3->curPos;
             Eigen::Vector3d s2s3 = (s2->curPos - s3->curPos).normalized();
@@ -536,7 +544,7 @@ class SoftAngle : public Angle {
             if ( orientation < 0 ) {
                 angle = 360-angle;
             }
-            cout << "angle " << angle << endl;
+            // cout << "angle " << angle << endl;
             if ((angle > const_angle || angle < 20) && (v1.normalized() != v2.normalized())) {
                 //See Wikipedia for arbitrary axis rotation matrix
                 // cout << "angle " << angle << endl;
@@ -549,34 +557,38 @@ class SoftAngle : public Angle {
                 } else {
                     rotation_amount = const_angle - angle;
                 }
-                cout << "rotation amount " << rotation_amount << endl;
+                // cout << "rotation amount " << rotation_amount << endl;
                 // cout << "rotation_amount " << rotation_amount << endl;
                 double cosa = cos(rotation_amount/2 * 3.1415926535/180); double sina = sin(rotation_amount/2 * 3.1415926535/180); double mcosa = 1 - cosa; double msina = 1 - sina;
                 Eigen::Matrix3d rotation1;
-                rotation1 << 
-                    cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
-                    s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
-                    s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
-                // cout << "rotation matrix" << endl;
-                // cout << rotation << endl;
+                // rotation1 << 
+                //     cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
+                //     s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
+                //     s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                rotation1 = AngleAxisd(rotation_amount/2 * 3.1415926535/180, s2s3);
+                // cout << "rotation1 matrix" << endl;
+                // cout << rotation1 << endl;
                 cosa = cos(-rotation_amount/2 * 3.1415926535/180); sina = sin(-rotation_amount/2 * 3.1415926535/180); mcosa = 1 - cosa; msina = 1 - sina;
                 Eigen::Matrix3d rotation2;
-                rotation2 <<
-                    cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
-                    s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
-                    s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                // rotation2 <<
+                //     cosa + s2s3[0] * s2s3[0] * mcosa, s2s3[0] * s2s3[1] * mcosa - s2s3[2] * sina, s2s3[0] * s2s3[2] * mcosa + s2s3[1] * sina,
+                //     s2s3[1] * s2s3[0] * mcosa + s2s3[2] * sina, cosa + s2s3[1] * s2s3[1] * mcosa, s2s3[1] * s2s3[2] * mcosa - s2s3[0] * sina,
+                //     s2s3[2] * s2s3[0] * mcosa - s2s3[1] * sina, s2s3[2] * s2s3[1] * mcosa + s2s3[0] * sina, cosa + s2s3[2] * s2s3[2] * mcosa;
+                rotation2 = AngleAxisd(-rotation_amount/2 * 3.1415926535/180, s2s3);
+                // cout << "rotation2 matrix" << endl;
+                // cout << rotation2 << endl;
 
-                Eigen::Vector3d newPosS4 = rotation1 * s4->curPos;
-                Eigen::Vector3d oldPosS4 = rotation1 * s4->oldPos;
-                Eigen::Vector3d newPosS1 = rotation2 * s1->curPos;
-                Eigen::Vector3d oldPosS1 = rotation2 * s1->oldPos;
+                Eigen::Vector3d newPosS4 = rotation1 * (s4->curPos - hingeCenter);
+                Eigen::Vector3d oldPosS4 = rotation1 * (s4->oldPos - hingeCenter);
+                Eigen::Vector3d newPosS1 = rotation2 * (s1->curPos - hingeCenter);
+                Eigen::Vector3d oldPosS1 = rotation2 * (s1->oldPos - hingeCenter);
                 Eigen::Vector3d nanbias = Eigen::Vector3d(1e-5, 1e-5, 1e-5);
-                s1->curPos = newPosS1; s1->oldPos = newPosS1 + 0.05 * (oldPosS1-newPosS1 + nanbias);
-                s4->curPos = newPosS4; s4->oldPos = newPosS4 + 0.05 * (oldPosS4 - newPosS4 + nanbias);
+                s1->curPos = newPosS1 + hingeCenter; s1->oldPos = s1->curPos + 1 * (oldPosS1-newPosS1 + nanbias);
+                s4->curPos = newPosS4 + hingeCenter; s4->oldPos = s4->curPos + 1 * (oldPosS4 - newPosS4 + nanbias);
             }
-            cout << "End rotation constraint" << endl;
+            // cout << "s1s2 magnitude after " << (s1->curPos - s2->curPos).norm() << endl;
+            // cout << "End rotation constraint" << endl;
         }
-
 
 };
 
