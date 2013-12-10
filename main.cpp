@@ -42,6 +42,9 @@ void junk(){
 #define S_KEY 115
 #define D_KEY 100
 #define SPACEBAR 32
+#define ZERO 48
+#define ONE 49
+#define TWO 50
 
 #define PI 3.14159265
 //#define GL_GLEXT_PROTOTYPES
@@ -208,6 +211,14 @@ void myKeys(unsigned char key, int x, int y) {
     case B_KEY:
         fire_secondary = true;
         break;
+    case ONE:
+        cout << "Switching to laser" << endl;
+        primary = "laser";
+        break;
+    case TWO:
+        cout << "Switching to rockets" << endl;
+        primary = "rockets";
+        break;
 	}
 }
 
@@ -341,6 +352,7 @@ void drawHUD(){
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
 } 
+
 void drawAcc(){
   //this method draws a triangle based on the acc. This is to debug and make sure the grav moves along with the movement of the box
   glBegin(GL_TRIANGLES);
@@ -374,13 +386,19 @@ void fireLaser(){
 } 
 
 void fireRocket(){
+    Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
+    Eigen::Vector3d oldPos = curPos - bullet_dir;
+    Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
+                                   0.1, 0.5, 900);
+    explosive->oldPos = oldPos;
+    ps.rockets.push_back(explosive);
 } 
 
 void fireGrenade(){
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
-                                   0.1, 0.5, 200);
+                                   0.1, 0.5, 200, 9000);
     explosive->oldPos = oldPos;
     ps.grenades.push_back(explosive);
 } 
@@ -445,6 +463,18 @@ void myDisplay() {
         glutSolidSphere(ps.grenades[i]->radius, slices, stacks);
         glTranslatef(-ps.grenades[i]->curPos[0], -ps.grenades[i]->curPos[1], -ps.grenades[i]->curPos[2]);
     } 
+
+    // Render all collision based explosive particles
+    for (int i = 0; i < ps.rockets.size(); i++){
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
+        
+        glTranslatef(ps.rockets[i]->curPos[0], ps.rockets[i]->curPos[1], ps.rockets[i]->curPos[2]);
+        glutSolidSphere(ps.rockets[i]->radius, slices, stacks);
+        glTranslatef(-ps.rockets[i]->curPos[0], -ps.rockets[i]->curPos[1], -ps.rockets[i]->curPos[2]);
+    }
+
     // Render all explosions
     for (int i = 0; i < ps.explosions.size(); i++){
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
@@ -468,6 +498,8 @@ void myDisplay() {
     if (fire_primary){
         if (primary == "laser")
             fireLaser();
+        else if (primary == "rockets")
+            fireRocket();
         fire_primary = false;
     }
 

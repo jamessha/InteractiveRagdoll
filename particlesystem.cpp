@@ -55,6 +55,23 @@ class Sphere {
             boundaryConstraints(ll, up);
         }
 
+        bool boundaryIntersect (Eigen::Vector3d& ll, Eigen::Vector3d& up){
+            double x = curPos[0];
+            double y = curPos[1];
+            double z = curPos[2];
+
+            double minx = ll[0] + radius;
+            double maxx = up[0] - radius;
+            double miny = ll[1] + radius;
+            double maxy = up[1] - radius;
+            double minz = ll[2] + radius;
+            double maxz = up[2] - radius;
+            
+            if (x < minx || x > maxx || y < miny || y > maxy || z < minz || z > maxz)
+                return true;
+            return false;
+        } 
+
         void boundaryConstraints (Eigen::Vector3d& ll, Eigen::Vector3d& up) {
             double x = curPos[0];
             double y = curPos[1];
@@ -129,6 +146,13 @@ class Sphere {
             }
         }
 
+        bool sphereIntersect(Sphere* other){
+            Eigen::Vector3d colaxis = other->curPos - this->curPos;
+            if (other != this && (colaxis.norm() < other->radius + this->radius)) 
+                return true;
+            return false;
+        } 
+
         //May want to change to list of Spheres
         //http://studiofreya.com/blog/3d-math-and-physics/simple-sphere-sphere-collision-detection-and-collision-response/
         void sphereCollisionConstraints(Sphere* other) {
@@ -155,18 +179,43 @@ class Sphere {
         }
 };
 
-class Grenade : public Sphere {
+class Explosive : public Sphere{
+    public:
+        double force;
+};
+
+// Time based explosive
+class Grenade : public Explosive {
     public:
         double fuse;
 
         Grenade(double curx, double cury, double curz,
-                double radius, double mass, double fuse){
+                double radius, double mass, double fuse,
+                double force){
             this->oldPos << curx, cury, curz;
             this->curPos << curx, cury, curz;
             this->radius = radius;
             this->mass = mass;
             this->fuse = fuse;
             this->acc << 0, 0, 0;
+            this->force = force;
+        }
+};
+
+// Collision based explosive
+class Rocket : public Explosive {
+    public:
+        bool collision;
+
+        Rocket(double curx, double cury, double curz,
+               double radius, double mass, double force){
+            this->oldPos << curx, cury, curz;
+            this->curPos << curx, cury, curz;
+            this->radius = radius;
+            this->mass = mass;
+            this->acc << 0, 0, 0;
+            this->collision = false;
+            this->force = force;
         }
 };
 
@@ -230,7 +279,6 @@ class Cylinder{
                 Eigen::Vector3d other_node2_v = ((body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).normalized() + 0.1*E).normalized();
                 double other_node2_mag = (body_parts[i]->node2->curPos - body_parts[i]->node2->oldPos).norm();
                
-
                 this->node1->curPos += D*this->r;
                 this->node2->curPos += D*this->r;
                 this->node1->oldPos = this->node1->curPos - this_node1_mag*this_node1_v;
@@ -275,6 +323,15 @@ class Cylinder{
 
             return true;
         }
+
+        bool sphereIntersect(Sphere* s){
+            Sphere* n1 = this->node1;
+            Sphere* n2 = this->node2;
+            double d = PointLineSegDist(n1->curPos, n2->curPos, s->curPos);
+            if (d > s->radius + this->r)
+                return false;
+            return true;
+        } 
 
         void sphereCollisionConstraints(Sphere* s){
             Sphere* n1 = this->node1;
@@ -587,6 +644,7 @@ class ParticleSystem {
         vector <Angle*> AA;
         vector <Grenade*> grenades;
         vector <Grenade*> explosions;
+        vector <Rocket*> rockets;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
@@ -615,6 +673,7 @@ class ParticleSystem {
         void SatisfyConstraints();
         void GetBox(vector<Eigen::Vector3d>& vertices);
         void FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag);
+        void CreateExplosion(Explosive* exploder);
         void ComputeExplosions();
 };
 
@@ -665,7 +724,31 @@ void ParticleSystem::Verlet () {
     for (int i = 0; i < grenades.size(); i++) {
         grenades[i]->Verlet(dtimestep, world_acc);
     }
+    for (int i = 0; i < rockets.size(); i++){
+        Eigen::Vector3d zero_acc(0, 0, 0);
+        rockets[i]->Verlet(dtimestep, zero_acc);
+    } 
 }
+
+void ApplyExplosiveForce(Explosive* exploder, Sphere* explodee){
+    Eigen::Vector3d blast = (explodee->curPos - exploder->curPos);
+    Eigen::Vector3d blast_Direction = blast.normalized();
+    double blast_dist = blast.norm();
+    explodee->applyForce(exploder->force * blast_Direction/(blast_dist * blast_dist));
+}
+
+void ParticleSystem::CreateExplosion(Explosive* exploder){
+    Grenade* explosion = new Grenade(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2), 1.0, 1.0, 2, 0);
+    explosions.push_back(explosion);
+    for (int j = 0; j < grenades.size(); j++) {
+        if (exploder == grenades[j])
+            continue;
+        ApplyExplosiveForce(exploder, grenades[j]);
+    }
+    for (int j = 0; j < SS.size(); j++) {
+        ApplyExplosiveForce(exploder, SS[j]);
+    }
+} 
 
 void ParticleSystem::ComputeExplosions(){
     // Erase any old explosions(they've been rendered)
@@ -675,30 +758,24 @@ void ParticleSystem::ComputeExplosions(){
         else
             explosions[i]->fuse -= 1;
     }
-
+    
+    // Compute explosions for grenades
     for (int i = 0; i < grenades.size(); i++) {
         if (grenades[i]->fuse < 0) {
-            Grenade* explosion = new Grenade(grenades[i]->curPos(0), grenades[i]->curPos(1), grenades[i]->curPos(2), 1.0, 1.0, 2);
-            explosions.push_back(explosion);
-            for (int j = 0; j < grenades.size(); j++) {
-                if (i == j)
-                    continue;
-                Eigen::Vector3d blast = (grenades[j]->curPos - grenades[i]->curPos);
-                Eigen::Vector3d blast_Direction = blast.normalized();
-                double blast_dist = blast.norm();
-                grenades[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
-            }
-            for (int j = 0; j < SS.size(); j++) {
-                Eigen::Vector3d blast = (SS[j]->curPos - grenades[i]->curPos);
-                Eigen::Vector3d blast_Direction = blast.normalized();
-                double blast_dist = blast.norm();
-                SS[j]->applyForce(9000 * blast_Direction/(blast_dist * blast_dist));
-            }
+            CreateExplosion(grenades[i]); 
             grenades.erase(grenades.begin() + i);
         } else {
             grenades[i]->fuse -= 1;
         } 
     }
+
+    // Compute explosions for rockets
+    for (int i = 0; i < rockets.size(); i++){
+        if (rockets[i]->collision){
+            CreateExplosion(rockets[i]);
+            rockets.erase(rockets.begin() + i);
+        } 
+    } 
 } 
 
 void ParticleSystem::TimeStep() {
@@ -723,6 +800,19 @@ void ParticleSystem::SatisfyConstraints() {
         (*si)->constraints(box_corner, box_corner+box_dims);
     }
 
+    for (int i = 0; i < rockets.size(); i++){
+        if (rockets[i]->boundaryIntersect(box_corner, box_dims))
+            rockets[i]->collision = true;
+        for (int j = 0; j < grenades.size(); j++){
+            if (grenades[j]->sphereIntersect(rockets[i]))
+                rockets[i]->collision = true;
+        } 
+        for (int j = 0; j < CC.size(); j++){
+            if (CC[j]->sphereIntersect(rockets[i]))
+                rockets[i]->collision = true;
+        } 
+    }
+
     for (int i = 0; i < grenades.size(); i++) {
         grenades[i]->constraints(box_corner, box_corner+box_dims);
         for (int j = 0; j < grenades.size(); j++){
@@ -730,11 +820,17 @@ void ParticleSystem::SatisfyConstraints() {
                 continue;
             grenades[i]->sphereCollisionConstraints(grenades[j]);
         }
+        for (int j = 0; j < rockets.size(); j++){
+            grenades[i]->sphereCollisionConstraints(rockets[j]);
+        }
     }
+
     for (int i = 0; i < CC.size(); i++){
         CC[i]->constraints(CC, i);
         for (int j = 0; j < grenades.size(); j++)
             CC[i]->sphereCollisionConstraints(grenades[j]);
+        for (int j = 0; j < rockets.size(); j++)
+            CC[i]->sphereCollisionConstraints(rockets[j]);
     }
 
     vector<Link*>::iterator li;
