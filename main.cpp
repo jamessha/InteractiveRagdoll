@@ -337,7 +337,10 @@ void drawHUD(){
     glLoadIdentity();
     glDisable(GL_CULL_FACE);
     glClear(GL_DEPTH_BUFFER_BIT);
-
+    /////////////////////////////////////////////
+    // Draw crap here
+    
+    // Crosshairs
     double cx = viewport.w/2;
     double cy = viewport.h/2;
     double cross_size = 20;
@@ -352,6 +355,32 @@ void drawHUD(){
     glVertex2f(cx, cy - cross_size);
     glVertex2f(cx, cy + cross_size);
     glEnd();
+    
+    // Weapon display
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
+    char quote[100];
+    strcpy(quote, primary.c_str());
+    glPushMatrix();
+    glScalef(0.5, 0.5, 0.5);
+    glTranslatef(10.0, 100.0, 0.0);
+    glRotatef(180, 1.0, 0.0, 0.0);
+    for (int i = 0; i < (int) strlen(quote); i++){
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, quote[i]);
+    } 
+    glPopMatrix();
+    glPushMatrix();
+    glScalef(0.5, 0.5, 0.5);
+    glTranslatef(10.0, 200.0, 0.0);
+    glRotatef(180, 1.0, 0.0, 0.0);
+    char quote2[100];
+    strcpy(quote2, secondary.c_str());
+    for (int i = 0; i < (int) strlen(quote2); i++){
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, quote2[i]);
+    } 
+    glPopMatrix();
+    
+
+    ////////////////////////////////////////////
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
