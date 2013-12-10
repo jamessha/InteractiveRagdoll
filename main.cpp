@@ -142,8 +142,10 @@ void initializeVars() {
 }
 
 bool withinBoxBoundry(double pos_x, double pos_z){
-  double min_range = box_corner(0);
-  double max_range = min_range+box_dims(0);
+  double min_x = box_corner(0);
+  double min_z = box_corner(2);
+  double max_x = min_x+box_dims(0);
+  double max_z = min_z+box_dims(2);
   double reality_check = .9;  //when without this value, the camera makes it seem like im still outside of it. I'm going to see if this changes anything
   //min_range *= reality_check;
   //max_range *= reality_check; 
@@ -157,7 +159,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
       myfile.close();
   }*/
 
-  if(pos_x >= min_range +1 && pos_x <= max_range -1&& pos_z >= min_range+1 && pos_z <= max_range -1){
+  if(pos_x >= min_x +1 && pos_x <= max_x -1&& pos_z >= min_z+1 && pos_z <= max_z -1){
     return true;
   }
   else{
@@ -167,7 +169,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
 
 // function that handles keyboard events
 void myKeys(unsigned char key, int x, int y) {
-	double temp_cam_pos_x = 0;
+  double temp_cam_pos_x = 0;
   double temp_cam_pos_z = 0;
   switch(key) {
 	case ESCAPE:
@@ -429,10 +431,6 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-    glRotatef(cam_rot_x, 1.0, 0.0, 0.0);
-    glRotatef(cam_rot_y, 0.0, 1.0, 0.0);
-    glTranslatef(cam_pos_x, cam_pos_y, cam_pos_z);
-	
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
