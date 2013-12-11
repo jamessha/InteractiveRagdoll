@@ -85,7 +85,7 @@ int time_since_ground = 0;
 int best_time = 0;
 
 Buddy buddy;
-Eigen::Vector3d box_corner(-75, -5, -75);
+Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
@@ -98,6 +98,8 @@ GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
 GLfloat black[] = {0.0, 0.0, 0.0};
 GLfloat white[] = {1.0, 1.0, 1.0};
 GLfloat red[] = {1.0, 0.0, 0.0};
+GLfloat blue[] = {0.0, 0.0, 1.0};
+GLfloat green[] = {0.0, 1.0, 0.0};
 GLfloat new_tan_ambient[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
 GLfloat new_tan_diffuse[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
 GLfloat new_tan_specular[] = {0.5*0.82, 0.5*0.70, 0.5*0.54};
@@ -396,8 +398,8 @@ void drawBoxTextures(){
     glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
    glEnd();
 
-   glBindTexture(GL_TEXTURE_2D, text);
-   glBegin();
+   //glBindTexture(GL_TEXTURE_2D, text);
+   //glBegin();
      /*
     //face 5
     glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
@@ -410,7 +412,7 @@ void drawBoxTextures(){
     glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));*/
   
-  glEnd();
+  //glEnd();
 }
 
 void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
@@ -449,11 +451,14 @@ void drawHUD(){
     glEnd();
     
     // Weapon display
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
+    glRectf(0, 0, viewport.w, 40);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, green);
     char quote[100];
     strcpy(quote, primary.c_str());
     glPushMatrix();
-    glScalef(0.5, 0.5, 0.5);
+    glScalef(0.15, 0.15, 0.15);
     glTranslatef(10.0, 100.0, 0.0);
     glRotatef(180, 1.0, 0.0, 0.0);
     for (int i = 0; i < (int) strlen(quote); i++){
@@ -462,7 +467,7 @@ void drawHUD(){
 
     glPopMatrix();
     glPushMatrix();
-    glScalef(0.5, 0.5, 0.5);
+    glScalef(0.15, 0.15, 0.15);
     glTranslatef(10.0, 200.0, 0.0);
     glRotatef(180, 1.0, 0.0, 0.0);
     char quote2[100];
@@ -474,8 +479,8 @@ void drawHUD(){
 
     // Score display
     glPushMatrix();
-    glScalef(0.5, 0.5, 0.5);
-    glTranslatef(1000.0, 100.0, 0.0);
+    glScalef(0.15, 0.15, 0.15);
+    glTranslatef(750.0, 100.0, 0.0);
     glRotatef(180, 1.0, 0.0, 0.0);
     char quote3[100];
     string toDisp = "Score: " + to_string(time_since_ground);
@@ -485,8 +490,8 @@ void drawHUD(){
     }
     glPopMatrix();
     glPushMatrix();
-    glScalef(0.5, 0.5, 0.5);
-    glTranslatef(1000.0, 200.0, 0.0);
+    glScalef(0.15, 0.15, 0.15);
+    glTranslatef(750.0, 200.0, 0.0);
     glRotatef(180, 1.0, 0.0, 0.0);
     char quote4[100];
     toDisp = "Best Score: " + to_string(best_time);
