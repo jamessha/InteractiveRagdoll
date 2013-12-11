@@ -191,7 +191,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
     return true;
   }
   else{
-    return true;  //this is for testing purposes
+    return false;  
   }
 }
 
