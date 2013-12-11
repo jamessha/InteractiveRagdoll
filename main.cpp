@@ -43,6 +43,7 @@ void junk(){
 #define B_KEY  98
 #define S_KEY 115
 #define D_KEY 100
+#define T_KEY 116
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -76,12 +77,13 @@ bool fire_secondary = false;
 string primary = "laser";
 string secondary = "grenade";
 bool DEBUG;
+bool texture = true;
 bool touching_ground = false;
 int time_since_ground = 0;
 int best_time = 0;
 
 Buddy buddy;
-Eigen::Vector3d box_corner(-75, -75, -75);
+Eigen::Vector3d box_corner(-75, -5, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
@@ -233,6 +235,12 @@ void myKeys(unsigned char key, int x, int y) {
           cam_pos_z = temp_cam_pos_z;
         }
 		break;
+    case T_KEY:
+        if (texture)
+            texture = false;
+        else
+            texture = true;
+        break;
     case SPACEBAR:
         fire_primary = true;
         break;
@@ -263,12 +271,17 @@ void myMouse(int x, int y) {
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
 	cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
-	//prev_x = x;
-	//prev_y = y;
-    //cout << x << " " << y << endl;
-    //cout << prev_x << " " << prev_y << endl << endl;
-
-    glutWarpPointer(viewport.w/2, viewport.h/2);
+	prev_x = x;
+	prev_y = y;
+    
+    if (x > viewport.w-5)
+        glutWarpPointer(5, y);
+    else if (y > viewport.h-5)
+        glutWarpPointer(x, 5);
+    else if (x < 5)
+        glutWarpPointer(viewport.w-5, y);
+    else if (y < 5)
+        glutWarpPointer(x, viewport.h-5);
 }
 
 void onMouseButton(int button, int state, int x, int y) {
@@ -382,7 +395,7 @@ void drawBoxTextures(){
     glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));*/
+    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
   
   glEnd();
 }
@@ -557,10 +570,6 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-    /*glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);*/
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
@@ -578,10 +587,16 @@ void myDisplay() {
 
     //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
-    drawBoxTextures();
+    if (texture)
+        drawBoxTextures();
 
     //ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
     //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
      
     // Render Body
     int subdiv = 20;
