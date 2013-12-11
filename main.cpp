@@ -116,8 +116,7 @@ void loadTexture(){
 
   FreeImage_Initialise();
 
-  FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "assets/brickwalltexturebig.png");
-  FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(bitmap);
+  FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(FreeImage_Load(FIF_PNG, "assets/brickwalltexturebig.png"));
   int iwidth = FreeImage_GetWidth(finalimage);
   int iheight = FreeImage_GetHeight(finalimage);
  
@@ -133,7 +132,6 @@ void loadTexture(){
   
   //glBind(GL_TEXTURE_2D);
   FreeImage_Unload(finalimage);
-  FreeImage_Unload(bitmap);
 
   FreeImage_DeInitialise();
 }
@@ -361,10 +359,10 @@ void drawBoxTextures(){
     glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
     //face two
-    /*glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));/*
     //face three
     glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
@@ -374,7 +372,7 @@ void drawBoxTextures(){
     glTexCoord2f(0, 0); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
+    glTexCoord2f*(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
     //face 5
     glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
@@ -665,7 +663,7 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
-    //ps.TimeStep();
+    ps.TimeStep();
    
     glPopMatrix();
     drawHUD();
