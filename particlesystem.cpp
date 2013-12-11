@@ -910,9 +910,9 @@ void ParticleSystem::SatisfyConstraints() {
         }
     }
 
-    for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
-       (*ai)->constraints();
-    }
+    //for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
+    //   (*ai)->constraints();
+    //}
 }
 
 void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){

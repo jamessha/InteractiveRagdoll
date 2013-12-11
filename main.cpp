@@ -241,8 +241,12 @@ void myMouse(int x, int y) {
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
 	cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
-	prev_x = x;
-	prev_y = y;
+	//prev_x = x;
+	//prev_y = y;
+    //cout << x << " " << y << endl;
+    //cout << prev_x << " " << prev_y << endl << endl;
+
+    glutWarpPointer(viewport.w/2, viewport.h/2);
 }
 
 void onMouseButton(int button, int state, int x, int y) {
