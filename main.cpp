@@ -104,7 +104,7 @@ GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
 
-GLuint text = 0; //for one texture. We are only going go to use one
+GLuint text[] = {0,0,0}; //for one texture. We are only going go to use one
 
 
 template <typename T>
@@ -114,29 +114,38 @@ std::string to_string(T value){
   return os.str();
 }
 
-void loadTexture(){
-
+void loadTextures(GLuint texture, const char* fname){
   FreeImage_Initialise();
-
-  FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(FreeImage_Load(FIF_PNG, "assets/brickwalltexturebig.png"));
-  int iwidth = FreeImage_GetWidth(finalimage);
-  int iheight = FreeImage_GetHeight(finalimage);
- 
-  glGenTextures(3, &text);
-  glBindTexture(GL_TEXTURE_2D, text);
-
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, iwidth, iheight, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) FreeImage_GetBits(finalimage));
   
-  gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
-  
-  //glBind(GL_TEXTURE_2D);
-  FreeImage_Unload(finalimage);
+  //texture one - walls
+    FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(FreeImage_Load(FIF_PNG, fname, 0));
 
+    int iwidth = FreeImage_GetWidth(finalimage);
+    int iheight = FreeImage_GetHeight(finalimage);
+   
+    
+    glBindTexture(GL_TEXTURE_2D, texture);
+    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
+    
+    FreeImage_Unload(finalimage);
+   
   FreeImage_DeInitialise();
 }
+
+
+void loadTextures(){
+  glGenTextures(3, text);
+
+  loadTextures(text[0], "assets/brickwall2.png");
+  loadTextures(text[1], "assets/ceiling.png");
+  loadTextures(text[2], "assets/floor.png");
+}
+
 
 
 // function that sets up global variables etc
@@ -360,48 +369,49 @@ void drawBox(){
                               box_verts[7](0), box_verts[7](1), box_verts[7](2),
                               radius, slices);
 
-
 } 
 
 void drawBoxTextures(){
-  glBindTexture(GL_TEXTURE_2D, text);
+  glBindTexture(GL_TEXTURE_2D, text[0]);
   glBegin(GL_QUADS);
-    //face one
+    //face one - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
-    //face two
+    //face two - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
-    //face three
+    //face three - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
-    //face four
+    //face four - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
     glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
-   glEnd();
+  glEnd();
 
-   glBindTexture(GL_TEXTURE_2D, text);
-   glBegin();
-     /*
-    //face 5
+  //face 5 - floor
+  glBindTexture(GL_TEXTURE_2D, text[1]);
+  glBegin(GL_QUADS);
     glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
-    //face 6
-    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));*/
+    glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+  glEnd();
   
+  //face 6 - floor
+  glBindTexture(GL_TEXTURE_2D, text[2]);
+  glBegin(GL_QUADS);
+    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
   glEnd();
 }
 
@@ -557,7 +567,7 @@ void myDisplay() {
     //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  //makes the calculations expensive
 
 
-    gluPerspective(120.0, 1.0, 1.0, 500.0);
+    gluPerspective(105.0, 1.0, 1.0, 500.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glRotatef(-cam_rot_x*180/PI, 1.0, 0.0, 0.0);
@@ -711,7 +721,7 @@ int main(int argc, char *argv[]) {
     glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
   glutMouseFunc(onMouseButton);
-  loadTexture(); //load the texture
+  loadTextures(); //load the texture
   glEnable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
                   // enable z-buffer depth test
