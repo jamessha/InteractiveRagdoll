@@ -44,6 +44,7 @@ void junk(){
 #define S_KEY 115
 #define D_KEY 100
 #define T_KEY 116
+#define F_KEY 102
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -78,6 +79,7 @@ string primary = "laser";
 string secondary = "grenade";
 bool DEBUG;
 bool texture = true;
+bool wireframe = false;
 bool touching_ground = false;
 int time_since_ground = 0;
 int best_time = 0;
@@ -242,6 +244,12 @@ void myKeys(unsigned char key, int x, int y) {
             texture = false;
         else
             texture = true;
+        break;
+    case F_KEY:
+        if (wireframe)
+            wireframe = false;
+        else
+            wireframe = true;
         break;
     case SPACEBAR:
         fire_primary = true;
@@ -602,12 +610,21 @@ void myDisplay() {
      
     // Render Body
     int subdiv = 20;
-    for (int i = 0; i < buddy.body_parts.size(); i++){
-        Cylinder* l = buddy.body_parts[i];
-        renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
-                                  l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
-                                  l->r, subdiv);
-    }
+    if (!wireframe){
+        for (int i = 0; i < buddy.body_parts.size(); i++){
+            Cylinder* l = buddy.body_parts[i];
+            renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
+                                      l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
+                                      l->r, subdiv);
+        }
+    } else {
+        double r = 0.1;
+        for (int i = 0; i < buddy.limbs.size(); i++){
+            renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
+                                      buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
+                                      r, subdiv);
+        } 
+    } 
 
     // Render all time based explosive particles
     for (int i = 0; i < ps.grenades.size(); i++){
