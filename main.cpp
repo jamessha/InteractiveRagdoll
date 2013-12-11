@@ -74,15 +74,18 @@ bool fire_secondary = false;
 string primary = "laser";
 string secondary = "grenade";
 bool DEBUG;
+bool touching_ground = false;
+int time_since_ground = 0;
+int best_time = 0;
 
 Buddy buddy;
-Eigen::Vector3d box_corner(-10, -10, -10);
-Eigen::Vector3d box_dims(20, 20, 20);
+Eigen::Vector3d box_corner(-100, -10, -100);
+Eigen::Vector3d box_dims(200, 200, 200);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
                   0.05);
 vector<Eigen::Vector3d> box_verts;
-Eigen::Vector3d gravAcc(0.0, -9.0, 0.0);
+Eigen::Vector3d gravAcc(0.0, -3.0, 0.0);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -259,12 +262,16 @@ void mySpecial(int key, int x, int y) {
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.015;
+	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.05;
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
-	cam_rot_y -= atan2((double) x-prev_x, 1)*0.015;
-	prev_x = x;
-	prev_y = y;
+	cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
+	//prev_x = x;
+	//prev_y = y;
+    //cout << x << " " << y << endl;
+    //cout << prev_x << " " << prev_y << endl << endl;
+
+    glutWarpPointer(viewport.w/2, viewport.h/2);
 }
 
 void onMouseButton(int button, int state, int x, int y) {
@@ -424,7 +431,31 @@ void drawHUD(){
         glutStrokeCharacter(GLUT_STROKE_ROMAN, quote2[i]);
     } 
     glPopMatrix();
-    
+
+    // Score display
+    glPushMatrix();
+    glScalef(0.5, 0.5, 0.5);
+    glTranslatef(1000.0, 100.0, 0.0);
+    glRotatef(180, 1.0, 0.0, 0.0);
+    char quote3[100];
+    string toDisp = "Score: " + to_string(time_since_ground);
+    strcpy(quote3, toDisp.c_str());
+    for (int i = 0; i < (int) strlen(quote3); i++){
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, quote3[i]);
+    }
+    glPopMatrix();
+    glPushMatrix();
+    glScalef(0.5, 0.5, 0.5);
+    glTranslatef(1000.0, 200.0, 0.0);
+    glRotatef(180, 1.0, 0.0, 0.0);
+    char quote4[100];
+    toDisp = "Best Score: " + to_string(best_time);
+    strcpy(quote4, toDisp.c_str());
+    for (int i = 0; i < (int) strlen(quote4); i++){
+        glutStrokeCharacter(GLUT_STROKE_ROMAN, quote4[i]);
+    }
+    glPopMatrix();
+
 
     ////////////////////////////////////////////
     glMatrixMode(GL_PROJECTION);
@@ -468,7 +499,7 @@ void fireRocket(){
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
-                                   0.1, 0.5, 900);
+                                   0.1, 0.5, 90000);
     explosive->oldPos = oldPos;
     ps.rockets.push_back(explosive);
 } 
@@ -477,7 +508,7 @@ void fireGrenade(){
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
-                                   0.1, 0.5, 200, 9000);
+                                   0.1, 0.5, 200, 90000);
     explosive->oldPos = oldPos;
     ps.grenades.push_back(explosive);
 } 
@@ -493,7 +524,7 @@ void myDisplay() {
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-    gluPerspective(120.0, 1.0, 1.0, 50.0);
+    gluPerspective(120.0, 1.0, 1.0, 500.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glRotatef(-cam_rot_x*180/PI, 1.0, 0.0, 0.0);
@@ -593,9 +624,25 @@ void myDisplay() {
         if (secondary == "grenade")
             fireGrenade();
         fire_secondary = false;
+    }
+
+    // Score logic
+    touching_ground = false;
+    for (int i = 0; i < ps.CC.size(); i++){
+        Eigen::Vector3d adj_corner = ps.box_corner + Eigen::Vector3d(ps.CC[i]->r, ps.CC[i]->r, ps.CC[i]->r);
+        Eigen::Vector3d adj_dims = ps.box_dims - Eigen::Vector3d(ps.CC[i]->r, ps.CC[i]->r, ps.CC[i]->r);
+        if (ps.CC[i]->node1->groundIntersect(adj_corner, adj_dims) || ps.CC[i]->node2->groundIntersect(adj_corner, adj_dims)){
+            touching_ground = true;
+            time_since_ground = 0;
+        } 
+    } 
+    if (!touching_ground){
+        time_since_ground += 1;
+        if (time_since_ground > best_time)
+            best_time = time_since_ground;
     } 
     ps.TimeStep();
-    
+   
     glPopMatrix();
     drawHUD();
 

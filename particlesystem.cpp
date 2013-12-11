@@ -45,6 +45,7 @@ class Sphere {
 
         void Verlet(double dtimestep, Eigen::Vector3d& world_acc) {
             //cout << curPos.transpose() << endl;
+            //cout << "BOYBOYBOYBOY" << endl;
             Eigen::Vector3d temp = curPos;
             curPos = curPos + (1.0-1e-5)*(curPos-oldPos) + (acc+world_acc)*dtimestep*dtimestep;
             oldPos = temp;
@@ -72,6 +73,23 @@ class Sphere {
                 return true;
             return false;
         } 
+
+        bool groundIntersect (Eigen::Vector3d& ll, Eigen::Vector3d& up){
+            double x = curPos[0];
+            double y = curPos[1];
+            double z = curPos[2];
+
+            double minx = ll[0] + radius;
+            double maxx = up[0] - radius;
+            double miny = ll[1] + radius;
+            double maxy = up[1] - radius;
+            double minz = ll[2] + radius;
+            double maxz = up[2] - radius;
+           
+            if (y < miny)
+                return true;
+            return false;
+        }
 
         void boundaryConstraints (Eigen::Vector3d& ll, Eigen::Vector3d& up) {
             double x = curPos[0];
@@ -530,6 +548,7 @@ class SoftAngle : public Angle {
 
         void constraints() {
             //Variables for max angle position
+            // cout << "" << endl;
             // cout << "Being Rotation constraint" << endl;
             // cout << "const angle " << this->const_angle << endl;
             // cout << "" << endl;
@@ -598,8 +617,8 @@ class SoftAngle : public Angle {
                 Eigen::Vector3d newPosS1 = rotation2 * (s1->curPos - hingeCenter);
                 Eigen::Vector3d oldPosS1 = rotation2 * (s1->oldPos - hingeCenter);
                 Eigen::Vector3d nanbias = Eigen::Vector3d(1e-5, 1e-5, 1e-5);
-                s1->curPos = newPosS1 + hingeCenter; s1->oldPos = s1->curPos + 1 * (oldPosS1-newPosS1 + nanbias);
-                s4->curPos = newPosS4 + hingeCenter; s4->oldPos = s4->curPos + 1 * (oldPosS4 - newPosS4 + nanbias);
+                s1->curPos = newPosS1 + hingeCenter; s1->oldPos = s1->curPos + 0.1 * (oldPosS1-newPosS1 + nanbias);
+                s4->curPos = newPosS4 + hingeCenter; s4->oldPos = s4->curPos + 0.1 * (oldPosS4 - newPosS4 + nanbias);
             }
             // cout << "s1s2 magnitude after " << (s1->curPos - s2->curPos).norm() << endl;
             // cout << "End rotation constraint" << endl;
@@ -892,7 +911,7 @@ void ParticleSystem::SatisfyConstraints() {
     }
 
     //for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
-    //    (*ai)->constraints();
+    //   (*ai)->constraints();
     //}
 }
 

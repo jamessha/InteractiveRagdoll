@@ -17,16 +17,16 @@ class Buddy{
             this->pelvis = new Sphere(0.0, 2.5, 0.0, 0.0, 1.0);
             this->l_shoulder = new Sphere(-1.25, 4.2, 0.0, 0.0, 1.0);
             this->r_shoulder = new Sphere(1.25, 4.2, 0.0, 0.0, 1.0);
-            this->l_elbow1 = new Sphere(-1.2505, 3.2, 0.0, 0.0, 1.0);
-            this->r_elbow1 = new Sphere(1.2505, 3.2, 0.0, 0.0, 1.0);
-            this->l_elbow2 = new Sphere(-1.2495, 3.2, 0.0, 0.0, 1.0);
-            this->r_elbow2 = new Sphere(1.2495, 3.2, 0.0, 0.0, 1.0);
+            this->l_elbow1 = new Sphere(-1.2505, 3.2, 0.0, 0.0, 1);
+            this->r_elbow1 = new Sphere(1.2505, 3.2, 0.0, 0.0, 1);
+            this->l_elbow2 = new Sphere(-1.2495, 3.2, 0.0, 0.0, 1);
+            this->r_elbow2 = new Sphere(1.2495, 3.2, 0.0, 0.0, 1);
             this->l_wrist = new Sphere(-1.25, 2.2, 0.0, 0.0, 1.0);
             this->r_wrist = new Sphere(1.25, 2.2, 0.0, 0.0, 1.0);
-            this->l_knee1 = new Sphere(-0.5005, 1.5, 0.0, 0.0, 1.0);
-            this->r_knee1 = new Sphere(0.5005, 1.5, 0.0, 0.0, 1.0);
-            this->l_knee2 = new Sphere(-0.4995, 1.5, 0.0, 0.0, 1.0);
-            this->r_knee2 = new Sphere(0.4995, 1.5, 0.0, 0.0, 1.0);
+            this->l_knee1 = new Sphere(-0.5005, 1.5, 0.0, 0.0, 1);
+            this->r_knee1 = new Sphere(0.5005, 1.5, 0.0, 0.0, 1);
+            this->l_knee2 = new Sphere(-0.4995, 1.5, 0.0, 0.0, 1);
+            this->r_knee2 = new Sphere(0.4995, 1.5, 0.0, 0.0, 1);
             this->l_ankle = new Sphere(-0.5, 0.0, 0.0, 0.0, 1.0);
             this->r_ankle = new Sphere(0.5, 0.0, 0.0, 0.0, 1.0);
             
@@ -119,6 +119,10 @@ class Buddy{
             this->limbs.push_back(l_tibia2);
             this->limbs.push_back(r_tibia1);
             this->limbs.push_back(r_tibia2);
+            this->limbs.push_back(l_knee_joint);
+            this->limbs.push_back(r_knee_joint);
+            this->limbs.push_back(l_elbow_joint);
+            this->limbs.push_back(r_elbow_joint);
 
             this->body_parts.push_back(head_part);
             this->body_parts.push_back(body_part);
