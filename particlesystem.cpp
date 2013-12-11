@@ -45,6 +45,7 @@ class Sphere {
 
         void Verlet(double dtimestep, Eigen::Vector3d& world_acc) {
             //cout << curPos.transpose() << endl;
+            //cout << "BOYBOYBOYBOY" << endl;
             Eigen::Vector3d temp = curPos;
             curPos = curPos + (1.0-1e-5)*(curPos-oldPos) + (acc+world_acc)*dtimestep*dtimestep;
             oldPos = temp;
@@ -530,6 +531,7 @@ class SoftAngle : public Angle {
 
         void constraints() {
             //Variables for max angle position
+            // cout << "" << endl;
             // cout << "Being Rotation constraint" << endl;
             // cout << "const angle " << this->const_angle << endl;
             // cout << "" << endl;
@@ -891,9 +893,9 @@ void ParticleSystem::SatisfyConstraints() {
         }
     }
 
-    //for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
-    //    (*ai)->constraints();
-    //}
+    for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
+       (*ai)->constraints();
+    }
 }
 
 void ParticleSystem::GetBox(vector<Eigen::Vector3d>& vertices){
