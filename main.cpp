@@ -25,6 +25,8 @@
 #include <set>
 #include <map>
 #include <algorithm>
+#include <string>
+#include <sstream>
 
 #include "buddy.h"
 
@@ -79,8 +81,8 @@ int time_since_ground = 0;
 int best_time = 0;
 
 Buddy buddy;
-Eigen::Vector3d box_corner(-100, -10, -100);
-Eigen::Vector3d box_dims(200, 200, 200);
+Eigen::Vector3d box_corner(-75, -75, -75);
+Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
                   0.05);
@@ -102,33 +104,36 @@ GLfloat shininess[] = {8.0};
 
 GLuint text = 0; //for one texture. We are only going go to use one
 
+
+template <typename T>
+std::string to_string(T value){
+  std::ostringstream os;
+  os << value;
+  return os.str();
+}
+
 void loadTexture(){
 
   FreeImage_Initialise();
 
-  FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "brickwalltexture.png", PNG_DEFAULT);
-  //FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(bitmap);
-  FIBITMAP *finalimage = bitmap;
+  FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "assets/brickwalltexturebig.png");
+  FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(bitmap);
   int iwidth = FreeImage_GetWidth(finalimage);
   int iheight = FreeImage_GetHeight(finalimage);
-
-  glGenTextures(1, &text);
+ 
+  glGenTextures(3, &text);
   glBindTexture(GL_TEXTURE_2D, text);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  //PUT IN gl_linear for better looks. 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, iwidth, iheight, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) FreeImage_GetBits(finalimage));
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, iwidth, iheight, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) FreeImage_GetBits(finalimage));
   
-
+  gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
   
   //glBind(GL_TEXTURE_2D);
-  //FreeImage_Unload(finalimage);
-
-  if(text != 0){
-    cout << text << "\n";
-  }
+  FreeImage_Unload(finalimage);
+  FreeImage_Unload(bitmap);
 
   FreeImage_DeInitialise();
 }
@@ -138,14 +143,8 @@ void loadTexture(){
 void initializeVars() {
     perspective = false;  //on default, perspective is turned on. This is just for testing out purposes later.
     DEBUG = true;
-    if(DEBUG){
-      viewport.w = 1440;
-      viewport.h = 880;
-    }
-    else{
-      viewport.w = 800;
-      viewport.h = 800;
-    }
+    viewport.w = 1000;
+    viewport.h = 800;
     ps.GetBox(box_verts);
     ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
     ps.SS = buddy.joints;
@@ -157,14 +156,14 @@ void initializeVars() {
       ofstream myfile;
       myfile.open ("log.txt");
       myfile << "Writing this to a file.\n";
-      myfile << "Vertex 1: " << box_verts[0](0) << ", " << box_verts[0](1) << ", " << box_verts[0](2) << "\n";
-      myfile << "Vertex 2: " << box_verts[1](0) << ", " << box_verts[1](1) << ", " << box_verts[1](2) << "\n";
-      myfile << "Vertex 3: " << box_verts[2](0) << ", " << box_verts[2](1) << ", " << box_verts[2](2) << "\n";
-      myfile << "Vertex 4: " << box_verts[3](0) << ", " << box_verts[3](1) << ", " << box_verts[3](2) << "\n";
-      myfile << "Vertex 5: " << box_verts[4](0) << ", " << box_verts[4](1) << ", " << box_verts[4](2) << "\n";
-      myfile << "Vertex 6: " << box_verts[5](0) << ", " << box_verts[5](1) << ", " << box_verts[5](2) << "\n";
-      myfile << "Vertex 7: " << box_verts[6](0) << ", " << box_verts[6](1) << ", " << box_verts[6](2) << "\n";
-      myfile << "Vertex 8: " << box_verts[7](0) << ", " << box_verts[7](1) << ", " << box_verts[7](2) << "\n";
+      myfile << "Vertex 0: " << box_verts[0](0) << ", " << box_verts[0](1) << ", " << box_verts[0](2) << "\n";
+      myfile << "Vertex 1: " << box_verts[1](0) << ", " << box_verts[1](1) << ", " << box_verts[1](2) << "\n";
+      myfile << "Vertex 2: " << box_verts[2](0) << ", " << box_verts[2](1) << ", " << box_verts[2](2) << "\n";
+      myfile << "Vertex 3: " << box_verts[3](0) << ", " << box_verts[3](1) << ", " << box_verts[3](2) << "\n";
+      myfile << "Vertex 4: " << box_verts[4](0) << ", " << box_verts[4](1) << ", " << box_verts[4](2) << "\n";
+      myfile << "Vertex 5: " << box_verts[5](0) << ", " << box_verts[5](1) << ", " << box_verts[5](2) << "\n";
+      myfile << "Vertex 6: " << box_verts[6](0) << ", " << box_verts[6](1) << ", " << box_verts[6](2) << "\n";
+      myfile << "Vertex 7: " << box_verts[7](0) << ", " << box_verts[7](1) << ", " << box_verts[7](2) << "\n";
       myfile.close();
     }
 }
@@ -187,7 +186,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
       myfile.close();
   }*/
 
-  if(pos_x >= min_x +1 && pos_x <= max_x -1&& pos_z >= min_z+1 && pos_z <= max_z -1){
+  if(pos_x >= min_x +5 && pos_x <= max_x -5&& pos_z >= min_z+5 && pos_z <= max_z -5){
     return true;
   }
   else{
@@ -362,15 +361,31 @@ void drawBoxTextures(){
     glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
     glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
     //face two
-
+    /*glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
     //face three
-
+    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
     //face four
-
+    glTexCoord2f(0, 0); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
     //face 5
-
+    glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
     //face 6
-
+    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));*/
+  
   glEnd();
 }
 
@@ -420,6 +435,7 @@ void drawHUD(){
     for (int i = 0; i < (int) strlen(quote); i++){
         glutStrokeCharacter(GLUT_STROKE_ROMAN, quote[i]);
     } 
+
     glPopMatrix();
     glPushMatrix();
     glScalef(0.5, 0.5, 0.5);
@@ -456,7 +472,7 @@ void drawHUD(){
     }
     glPopMatrix();
 
-
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
     ////////////////////////////////////////////
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
@@ -516,13 +532,14 @@ void fireGrenade(){
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
-    //glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
+    glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();              				         // reset transformations
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);  //makes the calculations expensive
+
 
     gluPerspective(120.0, 1.0, 1.0, 500.0);
     glMatrixMode(GL_MODELVIEW);
@@ -542,9 +559,13 @@ void myDisplay() {
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
+    /*glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, cyan_ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, cyan_diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, cyan_specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);*/
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 
     GLdouble r = 0.1;
@@ -555,6 +576,9 @@ void myDisplay() {
     
     // Render Box
     drawBox();
+
+
+    //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
     drawBoxTextures();
 
@@ -641,7 +665,7 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
-    ps.TimeStep();
+    //ps.TimeStep();
    
     glPopMatrix();
     drawHUD();
@@ -658,6 +682,8 @@ int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(viewport.w, viewport.h);
+    
+  
     glutInitWindowPosition(100, 100);
 	windowID = glutCreateWindow("Interactive Buddy");
 
