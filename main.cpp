@@ -100,9 +100,34 @@ GLfloat shininess[] = {8.0};
 GLuint text = 0; //for one texture. We are only going go to use one
 
 void loadTexture(){
-  FIBITMAP* bitmap = FreeImage_Load(FIF_PNG, "brickwalltexture.png", PNG_DEFAULT);
+
+  FreeImage_Initialise();
+
+  FIBITMAP *bitmap = FreeImage_Load(FIF_PNG, "brickwalltexture.png", PNG_DEFAULT);
+  //FIBITMAP *finalimage = FreeImage_ConvertTo32Bits(bitmap);
+  FIBITMAP *finalimage = bitmap;
+  int iwidth = FreeImage_GetWidth(finalimage);
+  int iheight = FreeImage_GetHeight(finalimage);
+
   glGenTextures(1, &text);
+  glBindTexture(GL_TEXTURE_2D, text);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  //PUT IN gl_linear for better looks. 
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, iwidth, iheight, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) FreeImage_GetBits(finalimage));
+  
+
+  
   //glBind(GL_TEXTURE_2D);
+  //FreeImage_Unload(finalimage);
+
+  if(text != 0){
+    cout << text << "\n";
+  }
+
+  FreeImage_DeInitialise();
 }
 
 
@@ -125,7 +150,7 @@ void initializeVars() {
     ps.CC = buddy.body_parts;
     ps.AA = buddy.joint_angles;
 
-    /*if(DEBUG){  //write out the box vertices
+    if(DEBUG){  //write out the box vertices
       ofstream myfile;
       myfile.open ("log.txt");
       myfile << "Writing this to a file.\n";
@@ -138,7 +163,7 @@ void initializeVars() {
       myfile << "Vertex 7: " << box_verts[6](0) << ", " << box_verts[6](1) << ", " << box_verts[6](2) << "\n";
       myfile << "Vertex 8: " << box_verts[7](0) << ", " << box_verts[7](1) << ", " << box_verts[7](2) << "\n";
       myfile.close();
-    }*/
+    }
 }
 
 bool withinBoxBoundry(double pos_x, double pos_z){
@@ -163,7 +188,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
     return true;
   }
   else{
-    return false;
+    return true;  //this is for testing purposes
   }
 }
 
@@ -321,6 +346,27 @@ void drawBox(){
 
 } 
 
+void drawBoxTextures(){
+  glBindTexture(GL_TEXTURE_2D, text);
+  glBegin(GL_QUADS);
+    //face one
+    glTexCoord2f(0, 0); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+    glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
+    glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
+    //face two
+
+    //face three
+
+    //face four
+
+    //face 5
+
+    //face 6
+
+  glEnd();
+}
+
 void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
@@ -439,8 +485,13 @@ void fireGrenade(){
 // function that does the actual drawing of stuff
 void myDisplay() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
-    glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
+    //glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();              				         // reset transformations
+    glEnable(GL_TEXTURE_2D);
+    glShadeModel(GL_SMOOTH);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     gluPerspective(120.0, 1.0, 1.0, 50.0);
     glMatrixMode(GL_MODELVIEW);
@@ -473,6 +524,8 @@ void myDisplay() {
     
     // Render Box
     drawBox();
+    //add the textures to the box
+    drawBoxTextures();
 
     //ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
     //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
@@ -557,7 +610,6 @@ int main(int argc, char *argv[]) {
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-
     glutInitWindowSize(viewport.w, viewport.h);
     glutInitWindowPosition(100, 100);
 	windowID = glutCreateWindow("Interactive Buddy");
@@ -567,10 +619,12 @@ int main(int argc, char *argv[]) {
     glutReshapeFunc(myReshape);				// function to run when the window gets resized
     glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
-    glutMouseFunc(onMouseButton);
-
-	glEnable(GL_DEPTH_TEST);                // enable z-buffer depth test
-	glShadeModel(GL_SMOOTH);
+  glutMouseFunc(onMouseButton);
+  loadTexture(); //load the texture
+  glEnable(GL_TEXTURE_2D);
+	glEnable(GL_DEPTH_TEST);
+                  // enable z-buffer depth test
+  glShadeModel(GL_SMOOTH);
 
     glutMainLoop();							// infinite loop that will keep drawing and resizing
 
