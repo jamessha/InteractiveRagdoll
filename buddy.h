@@ -83,14 +83,14 @@ class Buddy{
             this->joints.push_back(pelvis);
             this->joints.push_back(l_shoulder);
             this->joints.push_back(r_shoulder);
-            //this->joints.push_back(l_elbow1);
+            this->joints.push_back(l_elbow1);
             this->joints.push_back(l_elbow2);
-            //this->joints.push_back(r_elbow1);
+            this->joints.push_back(r_elbow1);
             this->joints.push_back(r_elbow2);
             this->joints.push_back(l_wrist);
             this->joints.push_back(r_wrist);
-            //this->joints.push_back(l_knee1);
-            //`this->joints.push_back(r_knee1);
+            this->joints.push_back(l_knee1);
+            this->joints.push_back(r_knee1);
             this->joints.push_back(l_knee2);
             this->joints.push_back(r_knee2);
             this->joints.push_back(l_ankle);
