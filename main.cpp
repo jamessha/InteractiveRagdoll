@@ -99,7 +99,7 @@ ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
                   0.05);
 vector<Eigen::Vector3d> box_verts;
-Eigen::Vector3d gravAcc(0.0, -3.0, 0.0);
+Eigen::Vector3d gravAcc(0.0, -2.0, 0.0);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -580,28 +580,31 @@ void drawHUD(){
     glMatrixMode(GL_MODELVIEW);
 } 
 
-void drawAcc(){
-  //this method draws a triangle based on the acc. This is to debug and make sure the grav moves along with the movement of the box
+void drawLocation(Eigen::Vector3d buddyLocation){
+  buddyLocation(1) += 10;  //little above the head
+  int trianle_top_sides = 3;
+  int triangle_depth = 7;
   glBegin(GL_TRIANGLES);
         glColor3f(0.7, 0.0, 0.0);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, 1);
-        glVertex3f(1, 0, 1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
 
         glColor3f(0.0, 0.7, 0.0);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, 1);
-        glVertex3f(-1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
 
         glColor3f(0.0, 0.0, 0.7);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, -1);
-        glVertex3f(1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
 
         glColor3f(0.7, 0.7, 0.7);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(1, 0, 1);
-        glVertex3f(1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
+
 
   glEnd();
 
@@ -705,6 +708,9 @@ void myDisplay() {
                                       l->r, subdiv);
             Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
             Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
+            if(i==0){
+              drawLocation(point1);
+            }
             //if(i == 0) { //this head 
             //  //texture id's:(face = 3, 4 = limbs, torso =5)
             //  drawBodyTextures(text[3], point1, point2, r);
@@ -732,7 +738,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 
         glTranslatef(ps.grenades[i]->curPos[0], ps.grenades[i]->curPos[1], ps.grenades[i]->curPos[2]);
-        glutSolidSphere(ps.grenades[i]->radius, slices, stacks);
+        glutSolidSphere(ps.grenades[i]->radius*3, slices, stacks);
         glTranslatef(-ps.grenades[i]->curPos[0], -ps.grenades[i]->curPos[1], -ps.grenades[i]->curPos[2]);
     } 
 
@@ -743,7 +749,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
         
         glTranslatef(ps.rockets[i]->curPos[0], ps.rockets[i]->curPos[1], ps.rockets[i]->curPos[2]);
-        glutSolidSphere(ps.rockets[i]->radius, slices, stacks);
+        glutSolidSphere(ps.rockets[i]->radius*2, slices, stacks);
         glTranslatef(-ps.rockets[i]->curPos[0], -ps.rockets[i]->curPos[1], -ps.rockets[i]->curPos[2]);
     }
 
@@ -754,7 +760,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
 
         glTranslatef(ps.explosions[i]->curPos[0], ps.explosions[i]->curPos[1], ps.explosions[i]->curPos[2]);
-        glutSolidSphere(ps.explosions[i]->radius, slices, stacks);
+        glutSolidSphere(ps.explosions[i]->radius*3, slices, stacks);
         glTranslatef(-ps.explosions[i]->curPos[0], -ps.explosions[i]->curPos[1], -ps.explosions[i]->curPos[2]);
     }
 
