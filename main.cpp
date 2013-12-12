@@ -75,11 +75,16 @@ int windowID;
 double cam_rot_x = 0, cam_rot_y = 0;
 double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
+double accel = 0.5;
 bool perspective;
 Eigen::Vector3d bullet_start;
 Eigen::Vector3d bullet_start_draw;
 Eigen::Vector3d bullet_end;
 Eigen::Vector3d bullet_dir;
+Eigen::Vector3d gun_head;
+Eigen::Vector3d gun_head_draw;
+Eigen::Vector3d gun_end;
+Eigen::Vector3d gun_dir;
 bool fire_primary = false;
 bool fire_secondary = false;
 string primary = "laser";
@@ -240,6 +245,7 @@ bool withinBoxBoundry(double pos_x, double pos_z){
 void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_x = 0;
   double temp_cam_pos_z = 0;
+
   switch(key) {
 	case ESCAPE:
         //soundengine->drop();
@@ -247,32 +253,32 @@ void myKeys(unsigned char key, int x, int y) {
 		exit(0);
 		break;
 	case W_KEY:
-        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
+        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
 		break;
 	case A_KEY:
-		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
 		break;
 	case S_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
 		break;
 	case D_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
+		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
@@ -319,6 +325,52 @@ void myKeys(unsigned char key, int x, int y) {
 // function that handles special key events
 void mySpecial(int key, int x, int y) {
 	int modifier = glutGetModifiers();
+
+	double temp_cam_pos_x = 0;
+	double temp_cam_pos_z = 0;
+
+	switch(key) {
+	case GLUT_KEY_RIGHT:
+		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_LEFT:
+		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_UP:
+        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_DOWN:
+		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.5;
+		else accel = 0.5;
+		break;
+	}
 	glutPostRedisplay();
 }
 
@@ -492,6 +544,24 @@ void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
+}
+
+void drawGun() {
+	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
+		             cam_pos_y - cos(cam_rot_x),
+		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
+    gun_head << cam_pos_x, cam_pos_y, cam_pos_z;
+    gun_dir  << cos(cam_rot_x)*sin(cam_rot_y),
+		        sin(cam_rot_x),
+		        cos(cam_rot_y)*cos(cam_rot_x);
+    gun_dir.normalize();
+ 	gun_end = gun_head + 1.5*gun_dir;
+	
+	/*glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
+	renderCylinder_convenient(sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x,
+							  -cos(cam_rot_x)+cam_pos_y,
+							  sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z,
+							  gun_end(0), gun_end(1), gun_end(2), 0.15, 20);*/
 }
 
 void drawHUD(){
@@ -681,6 +751,8 @@ void myDisplay() {
     // Render Box
     drawBox();
 
+	// Draw gun
+	drawGun();
 
     //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
@@ -826,8 +898,8 @@ int main(int argc, char *argv[]) {
     glutMouseFunc(onMouseButton);
     loadTextures(); //load the texture
     glEnable(GL_TEXTURE_2D);
-	glEnable(GL_DEPTH_TEST);
-                  // enable z-buffer depth test
+	glEnable(GL_DEPTH_TEST); // enable z-buffer depth test
+	
     glShadeModel(GL_SMOOTH);
 
     glutMainLoop();							// infinite loop that will keep drawing and resizing

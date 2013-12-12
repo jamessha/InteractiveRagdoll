@@ -1,9 +1,9 @@
 Writing this to a file.
-Vertex 0: -75, -5, -75
-Vertex 1: -75, 145, -75
-Vertex 2: 75, 145, -75
-Vertex 3: 75, -5, -75
-Vertex 4: -75, -5, 75
-Vertex 5: -75, 145, 75
-Vertex 6: 75, 145, 75
-Vertex 7: 75, -5, 75
+Vertex 0: -75, -10, -75
+Vertex 1: -75, 140, -75
+Vertex 2: 75, 140, -75
+Vertex 3: 75, -10, -75
+Vertex 4: -75, -10, 75
+Vertex 5: -75, 140, 75
+Vertex 6: 75, 140, 75
+Vertex 7: 75, -10, 75
