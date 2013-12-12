@@ -440,7 +440,7 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
   double length = sqrt(pow(point1(0)-point2(0),2.0)+ pow(point1(0)-point2(0),2.0)+pow(point1(0)-point2(0), 2.0)); //distance between the two points
   glBindTexture(GL_TEXTURE_2D, texture);
   double num_of_strips = 180.0; //increasing this number might cause performance issues
-  
+  radius = 5;
   glBegin(GL_QUAD_STRIP);
     double x, y, z;
     y = length;
@@ -675,12 +675,12 @@ void myDisplay() {
               //texture id's:(face = 3, 4 = limbs, torso =5)
               drawBodyTextures(text[3], point1, point2, r);
             }
-            else if(i == 1){ //this is torso
+            /*else if(i == 1){ //this is torso
               drawBodyTextures(text[5], point1, point2, r);
             }
             else{ //arm or leg
               drawBodyTextures(text[4], point1, point2, r);
-            }
+            }*/
         }
     } else {
         double r = 0.1;
