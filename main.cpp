@@ -243,36 +243,36 @@ void myKeys(unsigned char key, int x, int y) {
     exit(0);
     break;
   case W_KEY:
-        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
+    temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
     temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
     break;
   case A_KEY:
     temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
     temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
     break;
   case S_KEY:
     temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
     temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
     break;
   case D_KEY:
     temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
     temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
+    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+      cam_pos_x = temp_cam_pos_x;
+      cam_pos_z = temp_cam_pos_z;
+    }
     break;
     case T_KEY:
         if (texture)
@@ -489,7 +489,7 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
   double length = sqrt(pow(point1(0)-point2(0),2.0)+ pow(point1(0)-point2(0),2.0)+pow(point1(0)-point2(0), 2.0)); //distance between the two points
   glBindTexture(GL_TEXTURE_2D, texture);
   double num_of_strips = 180.0; //increasing this number might cause performance issues
-  radius = 5;
+  glColor3d(1,1,1);
   glBegin(GL_QUAD_STRIP);
     double x, y, z;
     y = length;
@@ -497,12 +497,13 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
       double u = i/num_of_strips;
       x = radius * cos(2*M_PI*u);
       z = radius * sin(2*M_PI*u);
-      //top vertex
-      //glTexCoord2f(u,0.0); glVertex3f(x+point1(0) ,y+point1(1), z+point1(2));
-      glTexCoord2f(u,0.0); glVertex3f(x ,y, z);
+      
       //bottom vertex
       //glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
-      glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+      glTexCoord2f(u,0.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+      //top vertex
+      glTexCoord2f(u,0.0); glVertex3f(x+point1(0) ,y+point1(1), z+point1(2));
+      //glTexCoord2f(u,1.0); glVertex3f(x ,y, z);
     }
   glEnd();
 
@@ -732,18 +733,20 @@ void myDisplay() {
                                           l->r, subdiv);
                 Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
                 Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
-                if(i==0){
+                if(i==1){
                   drawLocation(point1);
                 }
+
+                //THIS IS BODY TEXTURES. Disabled because it was intensive and not much of a change. Also something was wrong with it so we just stopped working on it.
                 /*if(i == 0) { //this head 
                   //texture id's:(face = 3, 4 = limbs, torso =5)
-                  drawBodyTextures(text[3], point1, point2, r);
+                  drawBodyTextures(text[3], point1, point2, l->r);
                 }
                 else if(i == 1){ //this is torso
-                  drawBodyTextures(text[5], point1, point2, r);
+                  drawBodyTextures(text[5], point1, point2, l->r);
                 }
                 else{ //arm or leg
-                  drawBodyTextures(text[4], point1, point2, r);
+                  drawBodyTextures(text[4], point1, point2, l->r);
                 }*/
             }
         } else {
