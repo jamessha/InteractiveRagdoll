@@ -4,11 +4,15 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <stdio.h>
+#include <irrKlang.h>
 
 #ifdef _WIN32
 #include <windows.h>
+#include <conio.h>
 #else
 #include <sys/time.h>
+#include "irrKlang-1.4.0/examples/common/conio.h"
 #endif
 
 #ifdef OSX
@@ -55,6 +59,8 @@ void junk(){
 inline float sqr(float x) { return x*x; }
 
 using namespace std;
+using namespace irrklang;
+#pragma comment(lib, "irrKlang.lib")
 
 class Viewport {
 	public:
@@ -107,10 +113,12 @@ GLfloat cyan_ambient[] = {0, 0.2, 0.2};
 GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
+ISoundEngine* soundengine;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
 
 
+//Taken from online, as older compilers do not include
 template <typename T>
 std::string to_string(T value){
   std::ostringstream os;
@@ -175,6 +183,14 @@ void initializeVars() {
     ps.LL = buddy.limbs;
     ps.CC = buddy.body_parts;
     ps.AA = buddy.joint_angles;
+    ps.soundengine = soundengine;
+
+    soundengine = createIrrKlangDevice();
+
+    if (!soundengine) {
+      cout << "Could not startup engine" << endl;
+       // error starting up the engine
+    }
 
     if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -224,6 +240,7 @@ void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_z = 0;
   switch(key) {
 	case ESCAPE:
+    soundengine->drop();
 		glutDestroyWindow(windowID);
 		exit(0);
 		break;
@@ -279,10 +296,12 @@ void myKeys(unsigned char key, int x, int y) {
         break;
     case ONE:
         cout << "Switching to laser" << endl;
+        soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         primary = "laser";
         break;
     case TWO:
         cout << "Switching to rockets" << endl;
+        soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         primary = "rockets";
         break;
 	}
@@ -581,11 +600,13 @@ void drawAcc(){
 }
 
 void fireLaser(){
+    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     drawRay(bullet_start_draw, bullet_end);
     ps.FireRay(bullet_start, bullet_dir, 5);
 } 
 
 void fireRocket(){
+    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
@@ -595,6 +616,7 @@ void fireRocket(){
 } 
 
 void fireGrenade(){
+    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
@@ -605,6 +627,7 @@ void fireGrenade(){
 
 // function that does the actual drawing of stuff
 void myDisplay() {
+  
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();              				         // reset transformations
@@ -623,6 +646,9 @@ void myDisplay() {
     gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, // lookfrom
               cam_pos_x, cam_pos_y, cam_pos_z+0.001, // lookat
               0.0, 1.0,  0.0); // up
+
+    soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
+      ,vec3df(0,0,0), vec3df(0,1,0));
 
 	glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
@@ -762,7 +788,7 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
-    ps.TimeStep();
+    //ps.TimeStep();
    
     glPopMatrix();
     drawHUD();
@@ -770,12 +796,12 @@ void myDisplay() {
     glFlush();
     glutSwapBuffers();
 	glutPostRedisplay();
+  
 }
 
 int main(int argc, char *argv[]) {
 
     initializeVars();
-
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(viewport.w, viewport.h);

@@ -1,6 +1,9 @@
 #include <vector>
+#include <stdio.h>
+#include <irrKlang.h>
 
 #include "utils.h"
+using namespace irrklang;
 
 //With inspiration from Thomas Jakobsen and that Verlet website
 
@@ -10,6 +13,7 @@
 //constraints constrains the Particle (by links but right now it's just within a box defined by vectors)
 
 using namespace std;
+#pragma comment(lib, "irrKlang.lib")
 
 class Sphere {
     public:
@@ -736,6 +740,8 @@ class ParticleSystem {
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
+        ISoundEngine* soundengine;
+        vector <ISound*> sounds;
 
         ParticleSystem(double box_corner_x, double box_corner_y, double box_corner_z,
                        double box_dims_x, double box_dims_y, double box_dims_z,
@@ -750,10 +756,6 @@ class ParticleSystem {
             this->world_acc << accx, accy, accz;
         } 
 
-        void addSphere(Sphere& s);
-        void addLink(Link& l);
-        void addAngle(Angle& a);
-        void addBomb(Grenade& b);
         void zeroParticleAcc();
         void TimeStep();
         void Verlet();
@@ -764,21 +766,6 @@ class ParticleSystem {
         void ComputeExplosions();
 };
 
-void ParticleSystem::addSphere(Sphere& s) {
-    SS.push_back(&s);
-}
-
-void ParticleSystem::addLink(Link& l) {
-    LL.push_back(&l);
-}
-
-void ParticleSystem::addAngle(Angle& a) {
-    AA.push_back(&a);
-}
-
-void ParticleSystem::addBomb(Grenade& b) {
-    grenades.push_back(&b);
-}
 
 void ParticleSystem::zeroParticleAcc(){
     for (int i = 0; i < this->SS.size(); i++){
@@ -826,6 +813,18 @@ void ApplyExplosiveForce(Explosive* exploder, Sphere* explodee){
 
 void ParticleSystem::CreateExplosion(Explosive* exploder){
     Grenade* explosion = new Grenade(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2), 1.0, 1.0, 2, 0);
+     irrklang::vec3df position(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2));
+
+    // start the sound paused:
+    irrklang::ISound* snd = soundengine->play3D("irrKlang-1.4.0/media/bell.wav", position, false, true);
+
+    if (snd)
+    {  
+        snd->setMinDistance(10.0f); // a loud sound
+        snd->setIsPaused(false); // unpause the sound
+    }
+    sounds.push_back(snd);
+
     explosions.push_back(explosion);
     for (int j = 0; j < grenades.size(); j++) {
         if (exploder == grenades[j])
@@ -844,6 +843,13 @@ void ParticleSystem::ComputeExplosions(){
             explosions.erase(explosions.begin() + i);
         else
             explosions[i]->fuse -= 1;
+    }
+
+    // Erase old sounds(been played)
+    for (int i = 0; i < sounds.size(); i++) {
+        if (sounds[i]->isFinished()) {
+            sounds.erase(sounds.begin() + i);
+        }
     }
     
     // Compute explosions for grenades
