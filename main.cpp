@@ -735,7 +735,7 @@ void myDisplay() {
                 if(i==0){
                   drawLocation(point1);
                 }
-                if(i == 0) { //this head 
+                /*if(i == 0) { //this head 
                   //texture id's:(face = 3, 4 = limbs, torso =5)
                   drawBodyTextures(text[3], point1, point2, r);
                 }
@@ -744,7 +744,7 @@ void myDisplay() {
                 }
                 else{ //arm or leg
                   drawBodyTextures(text[4], point1, point2, r);
-                }
+                }*/
             }
         } else {
             double r = 0.1;
