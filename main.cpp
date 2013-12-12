@@ -139,7 +139,7 @@ GLfloat shininess[] = {8.0};
 // sf::Sound grenadesound;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
-
+Gluint gun_texture[1] = {0};
 
 //Taken from online, as older compilers do not include
 template <typename T>
@@ -183,7 +183,7 @@ void loadTextures(GLuint texture, const char* fname, int quality){
 
 void loadTextures(){
   glGenTextures(6, text);
-
+  glGenTextures(1, gun_texture);
   loadTextures(text[0], "assets/brickwall2.png", 0);
   loadTextures(text[1], "assets/ceiling.png", 0);
   loadTextures(text[2], "assets/floor.png", 0);
@@ -611,6 +611,8 @@ void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
 }
 
 void drawGun() {
+	GLUquadricObj *gun = gluNewQuadric();
+
 	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
 		             cam_pos_y - cos(cam_rot_x),
 		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
@@ -620,12 +622,29 @@ void drawGun() {
 		        cos(cam_rot_y)*cos(cam_rot_x);
     gun_dir.normalize();
  	gun_end = gun_head + 1.5*gun_dir;
+
+	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
+	gluQuadricTexture(gun, GL_TRUE); 
+	gluQuadricDrawStyle(gun, GLU_FILL); 
+	glPolygonMode(GL_FRONT, GL_FILL); 
+	gluQuadricNormals(gun, GLU_SMOOTH);
+	gluCylinder(gun, 3.0, 0.0, 6.0, 20, 100);
+
 	
-	/*glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, black);
-	renderCylinder_convenient(sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x,
+	/*renderCylinder_convenient(sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x,
 							  -cos(cam_rot_x)+cam_pos_y,
 							  sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z,
 							  gun_end(0), gun_end(1), gun_end(2), 0.15, 20);*/
+}
+
+void drawGunTexture() {
+	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_FLOAT, textureMap);
 }
 
 void drawHUD(){
