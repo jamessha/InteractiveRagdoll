@@ -50,6 +50,8 @@ void junk(){
 #define T_KEY 116
 #define F_KEY 102
 #define C_KEY 99
+#define N_KEY 110
+#define R_KEY 114
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -89,10 +91,11 @@ bool texture = true;
 bool wireframe = false;
 bool touching_ground = false;
 bool use_angle_constraints = false;
+int time_since_last_drop = 0;
 int time_since_ground = 0;
 int best_time = 0;
 
-Buddy buddy;
+vector<Buddy*> buddies;
 Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
@@ -171,7 +174,14 @@ void loadTextures(){
   loadTextures(text[5], "assets/chest.png",1);
 }
 
-
+void initializeBuddy() {
+    Buddy* buddy = new Buddy();
+    ps.SS = buddy->joints;
+    ps.LL = buddy->limbs;
+    ps.CC = buddy->body_parts;
+    ps.AA = buddy->joint_angles;
+    buddies.push_back(buddy);
+}
 
 // function that sets up global variables etc
 void initializeVars() {
@@ -181,10 +191,7 @@ void initializeVars() {
     viewport.h = 800;
     ps.GetBox(box_verts);
     ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
-    ps.SS = buddy.joints;
-    ps.LL = buddy.limbs;
-    ps.CC = buddy.body_parts;
-    ps.AA = buddy.joint_angles;
+    initializeBuddy();
     //ps.soundengine = soundengine;
 
     //soundengine = createIrrKlangDevice();
@@ -285,16 +292,42 @@ void myKeys(unsigned char key, int x, int y) {
             texture = true;
         break;
     case F_KEY:
+        // Render wireframe instead
         if (wireframe)
             wireframe = false;
         else
             wireframe = true;
         break;
     case C_KEY:
+        // Angle constraints
         if (use_angle_constraints)
             use_angle_constraints = false;
         else
             use_angle_constraints = true;
+        break;
+    case N_KEY:
+        // Add buddy
+        if (time_since_last_drop > 60){
+            Buddy* buddy = new Buddy();
+            buddies.push_back(buddy);
+            ps.SS.insert(ps.SS.end(), buddy->joints.begin(), buddy->joints.end());
+            ps.LL.insert(ps.LL.end(), buddy->limbs.begin(), buddy->limbs.end());
+            ps.CC.insert(ps.CC.end(), buddy->body_parts.begin(), buddy->body_parts.end());
+            ps.AA.insert(ps.AA.end(), buddy->joint_angles.begin(), buddy->joint_angles.end());
+            time_since_last_drop = 0;
+        }
+        break;
+    case R_KEY:
+        // Reset
+        buddies.clear();
+        ps.SS.clear();
+        ps.LL.clear();
+        ps.CC.clear();
+        ps.AA.clear();
+        ps.grenades.clear();
+        ps.rockets.clear();
+        ps.explosions.clear();
+        initializeBuddy();
         break;
     case SPACEBAR:
         fire_primary = true;
@@ -697,33 +730,36 @@ void myDisplay() {
      
     // Render Body
     int subdiv = 20;
-    if (!wireframe){
-        for (int i = 0; i < buddy.body_parts.size(); i++){
-            Cylinder* l = buddy.body_parts[i];
-            renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
-                                      l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
-                                      l->r, subdiv);
-            Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
-            Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
-            //if(i == 0) { //this head 
-            //  //texture id's:(face = 3, 4 = limbs, torso =5)
-            //  drawBodyTextures(text[3], point1, point2, r);
-            //}
-            /*else if(i == 1){ //this is torso
-              drawBodyTextures(text[5], point1, point2, r);
+    for (int i = 0; i < buddies.size(); i++){
+        Buddy buddy = *buddies[i];
+        if (!wireframe){
+            for (int i = 0; i < buddy.body_parts.size(); i++){
+                Cylinder* l = buddy.body_parts[i];
+                renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
+                                          l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
+                                          l->r, subdiv);
+                Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
+                Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
+                //if(i == 0) { //this head 
+                //  //texture id's:(face = 3, 4 = limbs, torso =5)
+                //  drawBodyTextures(text[3], point1, point2, r);
+                //}
+                /*else if(i == 1){ //this is torso
+                  drawBodyTextures(text[5], point1, point2, r);
+                }
+                else{ //arm or leg
+                  drawBodyTextures(text[4], point1, point2, r);
+                }*/
             }
-            else{ //arm or leg
-              drawBodyTextures(text[4], point1, point2, r);
-            }*/
-        }
-    } else {
-        double r = 0.1;
-        for (int i = 0; i < buddy.limbs.size(); i++){
-            renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
-                                      buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
-                                      r, subdiv);
+        } else {
+            double r = 0.1;
+            for (int i = 0; i < buddy.limbs.size(); i++){
+                renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
+                                          buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
+                                          r, subdiv);
             }
         }  
+    } 
 
     // Render all time based explosive particles
     for (int i = 0; i < ps.grenades.size(); i++){
@@ -797,6 +833,7 @@ void myDisplay() {
             best_time = time_since_ground;
     } 
     ps.TimeStep(use_angle_constraints);
+    time_since_last_drop += 1;
    
     glPopMatrix();
     drawHUD();
