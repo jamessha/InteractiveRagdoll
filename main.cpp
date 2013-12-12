@@ -5,6 +5,10 @@
 #include <fstream>
 #include <cmath>
 #include <stdio.h>
+// #include <SFML/Audio.hpp>
+// #include <SFML/System.hpp>
+// #include <SFML/Window.hpp>
+// #include <iomanip>
 //#include <irrKlang.h>
 
 #ifdef _WIN32
@@ -50,6 +54,8 @@ void junk(){
 #define T_KEY 116
 #define F_KEY 102
 #define C_KEY 99
+#define N_KEY 110
+#define R_KEY 114
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -64,8 +70,8 @@ using namespace std;
 //#pragma comment(lib, "irrKlang.lib")
 
 class Viewport {
-	public:
-		int w, h;
+  public:
+    int w, h;
 };
 
 // Global vars
@@ -94,17 +100,18 @@ bool texture = true;
 bool wireframe = false;
 bool touching_ground = false;
 bool use_angle_constraints = false;
+int time_since_last_drop = 0;
 int time_since_ground = 0;
 int best_time = 0;
 
-Buddy buddy;
+vector<Buddy*> buddies;
 Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
                   box_dims(0), box_dims(1), box_dims(2),
                   0.05);
 vector<Eigen::Vector3d> box_verts;
-Eigen::Vector3d gravAcc(0.0, -3.0, 0.0);
+Eigen::Vector3d gravAcc(0.0, -2.0, 0.0);
 
 // Default
 GLfloat lightpos[] = {2.0, -2.0, 10.0, 0.0};
@@ -121,6 +128,15 @@ GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
 //ISoundEngine* soundengine;
+// sf::SoundBuffer buffer1;
+// sf::SoundBuffer buffer2;
+// sf::SoundBuffer buffer3;
+// sf::SoundBuffer buffer4;
+
+// sf::Sound lasersound;
+// sf::Sound rocketsound;
+// sf::Sound switchsound;
+// sf::Sound grenadesound;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
 
@@ -176,7 +192,14 @@ void loadTextures(){
   loadTextures(text[5], "assets/chest.png",1);
 }
 
-
+void initializeBuddy() {
+    Buddy* buddy = new Buddy();
+    ps.SS = buddy->joints;
+    ps.LL = buddy->limbs;
+    ps.CC = buddy->body_parts;
+    ps.AA = buddy->joint_angles;
+    buddies.push_back(buddy);
+}
 
 // function that sets up global variables etc
 void initializeVars() {
@@ -186,10 +209,7 @@ void initializeVars() {
     viewport.h = 800;
     ps.GetBox(box_verts);
     ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
-    ps.SS = buddy.joints;
-    ps.LL = buddy.limbs;
-    ps.CC = buddy.body_parts;
-    ps.AA = buddy.joint_angles;
+    initializeBuddy();
     //ps.soundengine = soundengine;
 
     //soundengine = createIrrKlangDevice();
@@ -198,6 +218,32 @@ void initializeVars() {
     //  cout << "Could not startup engine" << endl;
     //   // error starting up the engine
     //}
+
+    //set Sounds
+    // buffer1;
+    // if (!buffer1.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+    //   cout << "HA" << endl;
+    //   }
+
+    // lasersound.setBuffer(buffer1);
+
+    // buffer2;
+    // if (!buffer2.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+    //   }
+    // rocketsound.setBuffer(buffer2);
+
+    // buffer3;
+    // if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+    //   }
+    // grenadesound.setBuffer(buffer3);
+
+    // buffer4;
+    // if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+    //   }
+    // switchsound.setBuffer(buffer4);
 
     if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -220,20 +266,9 @@ bool withinBoxBoundry(double pos_x, double pos_z){
   double min_z = box_corner(2);
   double max_x = min_x+box_dims(0);
   double max_z = min_z+box_dims(2);
-  double reality_check = .9;  //when without this value, the camera makes it seem like im still outside of it. I'm going to see if this changes anything
-  //min_range *= reality_check;
-  //max_range *= reality_check; 
+  int reality_check = 5; //arbitrary value
 
-  /*if(DEBUG){  //write out the box vertices
-      ofstream myfile;
-      myfile.open ("withinBoxBoundry.txt");
-      myfile << "Writing this to a file.\n";
-      myfile << "pos_x: "  << pos_x << "\n";
-      myfile << "pos_z: "<< pos_z<< ".\n";
-      myfile.close();
-  }*/
-
-  if(pos_x >= min_x +5 && pos_x <= max_x -5&& pos_z >= min_z+5 && pos_z <= max_z -5){
+  if(pos_x >= min_x +reality_check && pos_x <= max_x -reality_check&& pos_z >= min_z+reality_check && pos_z <= max_z -reality_check){
     return true;
   }
   else{
@@ -247,60 +282,86 @@ void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_z = 0;
 
   switch(key) {
-	case ESCAPE:
+  case ESCAPE:
         //soundengine->drop();
-		glutDestroyWindow(windowID);
-		exit(0);
-		break;
-	case W_KEY:
-        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
-		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
-		break;
-	case A_KEY:
-		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
-		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
-		break;
-	case S_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
-		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
-		break;
-	case D_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
-		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
-        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-          cam_pos_x = temp_cam_pos_x;
-          cam_pos_z = temp_cam_pos_z;
-        }
-		break;
-    case T_KEY:
+	  glutDestroyWindow(windowID);
+	  exit(0);
+	  break;
+  case W_KEY:
+	  temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
+	  temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
+	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+		  cam_pos_x = temp_cam_pos_x;
+		  cam_pos_z = temp_cam_pos_z;
+	  }
+	  break;
+  case A_KEY:
+	  temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
+	  temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
+	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+		  cam_pos_x = temp_cam_pos_x;
+		  cam_pos_z = temp_cam_pos_z;
+	  }
+	  break;
+  case S_KEY:
+	  temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
+	  temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
+	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+		  cam_pos_x = temp_cam_pos_x;
+		  cam_pos_z = temp_cam_pos_z;
+	  }
+	  break;
+  case D_KEY:
+	  temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
+	  temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
+	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+		  cam_pos_x = temp_cam_pos_x;
+		  cam_pos_z = temp_cam_pos_z;
+	  }
+	  break;
+  case T_KEY:
         if (texture)
             texture = false;
         else
             texture = true;
         break;
     case F_KEY:
+        // Render wireframe instead
         if (wireframe)
             wireframe = false;
         else
             wireframe = true;
         break;
     case C_KEY:
+        // Angle constraints
         if (use_angle_constraints)
             use_angle_constraints = false;
         else
             use_angle_constraints = true;
+        break;
+    case N_KEY:
+        // Add buddy
+        if (time_since_last_drop > 60){
+            Buddy* buddy = new Buddy();
+            buddies.push_back(buddy);
+            ps.SS.insert(ps.SS.end(), buddy->joints.begin(), buddy->joints.end());
+            ps.LL.insert(ps.LL.end(), buddy->limbs.begin(), buddy->limbs.end());
+            ps.CC.insert(ps.CC.end(), buddy->body_parts.begin(), buddy->body_parts.end());
+            ps.AA.insert(ps.AA.end(), buddy->joint_angles.begin(), buddy->joint_angles.end());
+            time_since_last_drop = 0;
+        }
+        break;
+    case R_KEY:
+        // Reset
+        buddies.clear();
+        ps.SS.clear();
+        ps.LL.clear();
+        ps.CC.clear();
+        ps.AA.clear();
+        ps.grenades.clear();
+        ps.rockets.clear();
+        ps.explosions.clear();
+        initializeBuddy();
         break;
     case SPACEBAR:
         fire_primary = true;
@@ -311,15 +372,17 @@ void myKeys(unsigned char key, int x, int y) {
     case ONE:
         cout << "Switching to laser" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        // switchsound.play();
         primary = "laser";
         break;
     case TWO:
         cout << "Switching to rockets" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        // switchsound.play();
         primary = "rockets";
         break;
-	}
-	glutPostRedisplay();
+  }
+  glutPostRedisplay();
 }
 
 // function that handles special key events
@@ -376,12 +439,12 @@ void mySpecial(int key, int x, int y) {
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.05;
+  double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.05;
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
-	cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
-	prev_x = x;
-	prev_y = y;
+  cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
+  prev_x = x;
+  prev_y = y;
     
     if (x > viewport.w-5)
         glutWarpPointer(5, y);
@@ -519,7 +582,7 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
   double length = sqrt(pow(point1(0)-point2(0),2.0)+ pow(point1(0)-point2(0),2.0)+pow(point1(0)-point2(0), 2.0)); //distance between the two points
   glBindTexture(GL_TEXTURE_2D, texture);
   double num_of_strips = 180.0; //increasing this number might cause performance issues
-  radius = 5;
+  glColor3d(1,1,1);
   glBegin(GL_QUAD_STRIP);
     double x, y, z;
     y = length;
@@ -527,12 +590,13 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
       double u = i/num_of_strips;
       x = radius * cos(2*M_PI*u);
       z = radius * sin(2*M_PI*u);
-      //top vertex
-      //glTexCoord2f(u,0.0); glVertex3f(x+point1(0) ,y+point1(1), z+point1(2));
-      glTexCoord2f(u,0.0); glVertex3f(x ,y, z);
+      
       //bottom vertex
       //glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
-      glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+      glTexCoord2f(u,0.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+      //top vertex
+      glTexCoord2f(u,0.0); glVertex3f(x+point1(0) ,y+point1(1), z+point1(2));
+      //glTexCoord2f(u,1.0); glVertex3f(x ,y, z);
     }
   glEnd();
 
@@ -650,28 +714,31 @@ void drawHUD(){
     glMatrixMode(GL_MODELVIEW);
 } 
 
-void drawAcc(){
-  //this method draws a triangle based on the acc. This is to debug and make sure the grav moves along with the movement of the box
+void drawLocation(Eigen::Vector3d buddyLocation){
+  buddyLocation(1) += 10;  //little above the head
+  int trianle_top_sides = 3;
+  int triangle_depth = 7;
   glBegin(GL_TRIANGLES);
         glColor3f(0.7, 0.0, 0.0);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, 1);
-        glVertex3f(1, 0, 1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
 
         glColor3f(0.0, 0.7, 0.0);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, 1);
-        glVertex3f(-1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
 
         glColor3f(0.0, 0.0, 0.7);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(-1, 0, -1);
-        glVertex3f(1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)-trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
 
         glColor3f(0.7, 0.7, 0.7);
-        glVertex3f(gravAcc(0), gravAcc(1), gravAcc(2));
-        glVertex3f(1, 0, 1);
-        glVertex3f(1, 0, -1);
+        glVertex3f(buddyLocation(0), buddyLocation(1), buddyLocation(2));
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)+trianle_top_sides);
+        glVertex3f(buddyLocation(0)+trianle_top_sides, buddyLocation(1)+triangle_depth, buddyLocation(2)-trianle_top_sides);
+
 
   glEnd();
 
@@ -679,12 +746,14 @@ void drawAcc(){
 
 void fireLaser(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    // lasersound.play();
     drawRay(bullet_start_draw, bullet_end);
     ps.FireRay(bullet_start, bullet_dir, 5);
 } 
 
 void fireRocket(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    // rocketsound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
@@ -695,6 +764,7 @@ void fireRocket(){
 
 void fireGrenade(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    // grenadesound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
@@ -705,10 +775,11 @@ void fireGrenade(){
 
 // function that does the actual drawing of stuff
 void myDisplay() {
+  //lasersound.play();
   
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
-    glLoadIdentity();              				         // reset transformations
+    glLoadIdentity();                              // reset transformations
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
@@ -728,14 +799,14 @@ void myDisplay() {
     //soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
     //  ,vec3df(0,0,0), vec3df(0,1,0));
 
-	glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightfv(GL_LIGHT0, GL_DIFFUSE,  white);
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
@@ -769,33 +840,41 @@ void myDisplay() {
      
     // Render Body
     int subdiv = 20;
-    if (!wireframe){
-        for (int i = 0; i < buddy.body_parts.size(); i++){
-            Cylinder* l = buddy.body_parts[i];
-            renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
-                                      l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
-                                      l->r, subdiv);
-            Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
-            Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
-            //if(i == 0) { //this head 
-            //  //texture id's:(face = 3, 4 = limbs, torso =5)
-            //  drawBodyTextures(text[3], point1, point2, r);
-            //}
-            /*else if(i == 1){ //this is torso
-              drawBodyTextures(text[5], point1, point2, r);
+    for (int i = 0; i < buddies.size(); i++){
+        Buddy buddy = *buddies[i];
+        if (!wireframe){
+            for (int i = 0; i < buddy.body_parts.size(); i++){
+                Cylinder* l = buddy.body_parts[i];
+                renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
+                                          l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
+                                          l->r, subdiv);
+                Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
+                Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
+                if(i==1){
+                  drawLocation(point1);
+                }
+
+                //THIS IS BODY TEXTURES. Disabled because it was intensive and not much of a change. Also something was wrong with it so we just stopped working on it.
+                /*if(i == 0) { //this head 
+                  //texture id's:(face = 3, 4 = limbs, torso =5)
+                  drawBodyTextures(text[3], point1, point2, l->r);
+                }
+                else if(i == 1){ //this is torso
+                  drawBodyTextures(text[5], point1, point2, l->r);
+                }
+                else{ //arm or leg
+                  drawBodyTextures(text[4], point1, point2, l->r);
+                }*/
             }
-            else{ //arm or leg
-              drawBodyTextures(text[4], point1, point2, r);
-            }*/
-        }
-    } else {
-        double r = 0.1;
-        for (int i = 0; i < buddy.limbs.size(); i++){
-            renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
-                                      buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
-                                      r, subdiv);
+        } else {
+            double r = 0.1;
+            for (int i = 0; i < buddy.limbs.size(); i++){
+                renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
+                                          buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
+                                          r, subdiv);
             }
         }  
+    } 
 
     // Render all time based explosive particles
     for (int i = 0; i < ps.grenades.size(); i++){
@@ -804,7 +883,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
 
         glTranslatef(ps.grenades[i]->curPos[0], ps.grenades[i]->curPos[1], ps.grenades[i]->curPos[2]);
-        glutSolidSphere(ps.grenades[i]->radius, slices, stacks);
+        glutSolidSphere(ps.grenades[i]->radius*3, slices, stacks);
         glTranslatef(-ps.grenades[i]->curPos[0], -ps.grenades[i]->curPos[1], -ps.grenades[i]->curPos[2]);
     } 
 
@@ -815,7 +894,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, white);
         
         glTranslatef(ps.rockets[i]->curPos[0], ps.rockets[i]->curPos[1], ps.rockets[i]->curPos[2]);
-        glutSolidSphere(ps.rockets[i]->radius, slices, stacks);
+        glutSolidSphere(ps.rockets[i]->radius*2, slices, stacks);
         glTranslatef(-ps.rockets[i]->curPos[0], -ps.rockets[i]->curPos[1], -ps.rockets[i]->curPos[2]);
     }
 
@@ -826,7 +905,7 @@ void myDisplay() {
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
 
         glTranslatef(ps.explosions[i]->curPos[0], ps.explosions[i]->curPos[1], ps.explosions[i]->curPos[2]);
-        glutSolidSphere(ps.explosions[i]->radius, slices, stacks);
+        glutSolidSphere(ps.explosions[i]->radius*3, slices, stacks);
         glTranslatef(-ps.explosions[i]->curPos[0], -ps.explosions[i]->curPos[1], -ps.explosions[i]->curPos[2]);
     }
 
@@ -869,13 +948,14 @@ void myDisplay() {
             best_time = time_since_ground;
     } 
     ps.TimeStep(use_angle_constraints);
+    time_since_last_drop += 1;
    
     glPopMatrix();
     drawHUD();
 
     glFlush();
     glutSwapBuffers();
-	glutPostRedisplay();
+  glutPostRedisplay();
   
 }
 
@@ -888,13 +968,13 @@ int main(int argc, char *argv[]) {
     
   
     glutInitWindowPosition(100, 100);
-	windowID = glutCreateWindow("Interactive Buddy");
+  windowID = glutCreateWindow("Interactive Buddy");
 
-	glutKeyboardFunc(myKeys);               // function to run when keys presses occur
-	glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
-    glutReshapeFunc(myReshape);				// function to run when the window gets resized
-    glutDisplayFunc(myDisplay);				// function to run when its time to draw something
-	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
+  glutKeyboardFunc(myKeys);               // function to run when keys presses occur
+  glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
+    glutReshapeFunc(myReshape);       // function to run when the window gets resized
+    glutDisplayFunc(myDisplay);       // function to run when its time to draw something
+  glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
     glutMouseFunc(onMouseButton);
     loadTextures(); //load the texture
     glEnable(GL_TEXTURE_2D);
@@ -902,7 +982,7 @@ int main(int argc, char *argv[]) {
 	
     glShadeModel(GL_SMOOTH);
 
-    glutMainLoop();							// infinite loop that will keep drawing and resizing
+    glutMainLoop();             // infinite loop that will keep drawing and resizing
 
     return 0;
 }
