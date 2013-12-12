@@ -50,6 +50,8 @@ void junk(){
 #define T_KEY 116
 #define F_KEY 102
 #define C_KEY 99
+#define N_KEY 110
+#define R_KEY 114
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -64,8 +66,8 @@ using namespace std;
 //#pragma comment(lib, "irrKlang.lib")
 
 class Viewport {
-	public:
-		int w, h;
+  public:
+    int w, h;
 };
 
 // Global vars
@@ -89,10 +91,11 @@ bool texture = true;
 bool wireframe = false;
 bool touching_ground = false;
 bool use_angle_constraints = false;
+int time_since_last_drop = 0;
 int time_since_ground = 0;
 int best_time = 0;
 
-Buddy buddy;
+vector<Buddy*> buddies;
 Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
@@ -171,7 +174,14 @@ void loadTextures(){
   loadTextures(text[5], "assets/chest.png",1);
 }
 
-
+void initializeBuddy() {
+    Buddy* buddy = new Buddy();
+    ps.SS = buddy->joints;
+    ps.LL = buddy->limbs;
+    ps.CC = buddy->body_parts;
+    ps.AA = buddy->joint_angles;
+    buddies.push_back(buddy);
+}
 
 // function that sets up global variables etc
 void initializeVars() {
@@ -181,10 +191,7 @@ void initializeVars() {
     viewport.h = 800;
     ps.GetBox(box_verts);
     ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
-    ps.SS = buddy.joints;
-    ps.LL = buddy.limbs;
-    ps.CC = buddy.body_parts;
-    ps.AA = buddy.joint_angles;
+    initializeBuddy();
     //ps.soundengine = soundengine;
 
     //soundengine = createIrrKlangDevice();
@@ -215,20 +222,9 @@ bool withinBoxBoundry(double pos_x, double pos_z){
   double min_z = box_corner(2);
   double max_x = min_x+box_dims(0);
   double max_z = min_z+box_dims(2);
-  double reality_check = .9;  //when without this value, the camera makes it seem like im still outside of it. I'm going to see if this changes anything
-  //min_range *= reality_check;
-  //max_range *= reality_check; 
+  int reality_check = 5; //arbitrary value
 
-  /*if(DEBUG){  //write out the box vertices
-      ofstream myfile;
-      myfile.open ("withinBoxBoundry.txt");
-      myfile << "Writing this to a file.\n";
-      myfile << "pos_x: "  << pos_x << "\n";
-      myfile << "pos_z: "<< pos_z<< ".\n";
-      myfile.close();
-  }*/
-
-  if(pos_x >= min_x +5 && pos_x <= max_x -5&& pos_z >= min_z+5 && pos_z <= max_z -5){
+  if(pos_x >= min_x +reality_check && pos_x <= max_x -reality_check&& pos_z >= min_z+reality_check && pos_z <= max_z -reality_check){
     return true;
   }
   else{
@@ -241,43 +237,43 @@ void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_x = 0;
   double temp_cam_pos_z = 0;
   switch(key) {
-	case ESCAPE:
+  case ESCAPE:
         //soundengine->drop();
-		glutDestroyWindow(windowID);
-		exit(0);
-		break;
-	case W_KEY:
+    glutDestroyWindow(windowID);
+    exit(0);
+    break;
+  case W_KEY:
         temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
+    temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
-		break;
-	case A_KEY:
-		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
+    break;
+  case A_KEY:
+    temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
+    temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
-		break;
-	case S_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
+    break;
+  case S_KEY:
+    temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
+    temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
-		break;
-	case D_KEY:
-		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
-		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
+    break;
+  case D_KEY:
+    temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
+    temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
         if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
           cam_pos_x = temp_cam_pos_x;
           cam_pos_z = temp_cam_pos_z;
         }
-		break;
+    break;
     case T_KEY:
         if (texture)
             texture = false;
@@ -285,16 +281,42 @@ void myKeys(unsigned char key, int x, int y) {
             texture = true;
         break;
     case F_KEY:
+        // Render wireframe instead
         if (wireframe)
             wireframe = false;
         else
             wireframe = true;
         break;
     case C_KEY:
+        // Angle constraints
         if (use_angle_constraints)
             use_angle_constraints = false;
         else
             use_angle_constraints = true;
+        break;
+    case N_KEY:
+        // Add buddy
+        if (time_since_last_drop > 60){
+            Buddy* buddy = new Buddy();
+            buddies.push_back(buddy);
+            ps.SS.insert(ps.SS.end(), buddy->joints.begin(), buddy->joints.end());
+            ps.LL.insert(ps.LL.end(), buddy->limbs.begin(), buddy->limbs.end());
+            ps.CC.insert(ps.CC.end(), buddy->body_parts.begin(), buddy->body_parts.end());
+            ps.AA.insert(ps.AA.end(), buddy->joint_angles.begin(), buddy->joint_angles.end());
+            time_since_last_drop = 0;
+        }
+        break;
+    case R_KEY:
+        // Reset
+        buddies.clear();
+        ps.SS.clear();
+        ps.LL.clear();
+        ps.CC.clear();
+        ps.AA.clear();
+        ps.grenades.clear();
+        ps.rockets.clear();
+        ps.explosions.clear();
+        initializeBuddy();
         break;
     case SPACEBAR:
         fire_primary = true;
@@ -312,24 +334,24 @@ void myKeys(unsigned char key, int x, int y) {
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         primary = "rockets";
         break;
-	}
-	glutPostRedisplay();
+  }
+  glutPostRedisplay();
 }
 
 // function that handles special key events
 void mySpecial(int key, int x, int y) {
-	int modifier = glutGetModifiers();
-	glutPostRedisplay();
+  int modifier = glutGetModifiers();
+  glutPostRedisplay();
 }
 
 // function that handles mouse movement
 void myMouse(int x, int y) {
-	double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.05;
+  double tmp = cam_rot_x - atan2((double) y-prev_y, 1)*0.05;
     if (tmp < PI/2 && tmp > -PI/2)
         cam_rot_x = tmp;
-	cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
-	prev_x = x;
-	prev_y = y;
+  cam_rot_y -= atan2((double) x-prev_x, 1)*0.05;
+  prev_x = x;
+  prev_y = y;
     
     if (x > viewport.w-5)
         glutWarpPointer(5, y);
@@ -641,7 +663,7 @@ void myDisplay() {
   
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
-    glLoadIdentity();              				         // reset transformations
+    glLoadIdentity();                              // reset transformations
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
@@ -661,14 +683,14 @@ void myDisplay() {
     //soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
     //  ,vec3df(0,0,0), vec3df(0,1,0));
 
-	glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightfv(GL_LIGHT0, GL_DIFFUSE,  white);
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
@@ -700,36 +722,39 @@ void myDisplay() {
      
     // Render Body
     int subdiv = 20;
-    if (!wireframe){
-        for (int i = 0; i < buddy.body_parts.size(); i++){
-            Cylinder* l = buddy.body_parts[i];
-            renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
-                                      l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
-                                      l->r, subdiv);
-            Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
-            Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
-            if(i==0){
-              drawLocation(point1);
+    for (int i = 0; i < buddies.size(); i++){
+        Buddy buddy = *buddies[i];
+        if (!wireframe){
+            for (int i = 0; i < buddy.body_parts.size(); i++){
+                Cylinder* l = buddy.body_parts[i];
+                renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
+                                          l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
+                                          l->r, subdiv);
+                Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
+                Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
+                if(i==0){
+                  drawLocation(point1);
+                }
+                if(i == 0) { //this head 
+                  //texture id's:(face = 3, 4 = limbs, torso =5)
+                  drawBodyTextures(text[3], point1, point2, r);
+                }
+                else if(i == 1){ //this is torso
+                  drawBodyTextures(text[5], point1, point2, r);
+                }
+                else{ //arm or leg
+                  drawBodyTextures(text[4], point1, point2, r);
+                }
             }
-            //if(i == 0) { //this head 
-            //  //texture id's:(face = 3, 4 = limbs, torso =5)
-            //  drawBodyTextures(text[3], point1, point2, r);
-            //}
-            /*else if(i == 1){ //this is torso
-              drawBodyTextures(text[5], point1, point2, r);
-            }
-            else{ //arm or leg
-              drawBodyTextures(text[4], point1, point2, r);
-            }*/
-        }
-    } else {
-        double r = 0.1;
-        for (int i = 0; i < buddy.limbs.size(); i++){
-            renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
-                                      buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
-                                      r, subdiv);
+        } else {
+            double r = 0.1;
+            for (int i = 0; i < buddy.limbs.size(); i++){
+                renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
+                                          buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
+                                          r, subdiv);
             }
         }  
+    } 
 
     // Render all time based explosive particles
     for (int i = 0; i < ps.grenades.size(); i++){
@@ -803,13 +828,14 @@ void myDisplay() {
             best_time = time_since_ground;
     } 
     ps.TimeStep(use_angle_constraints);
+    time_since_last_drop += 1;
    
     glPopMatrix();
     drawHUD();
 
     glFlush();
     glutSwapBuffers();
-	glutPostRedisplay();
+  glutPostRedisplay();
   
 }
 
@@ -822,21 +848,21 @@ int main(int argc, char *argv[]) {
     
   
     glutInitWindowPosition(100, 100);
-	windowID = glutCreateWindow("Interactive Buddy");
+  windowID = glutCreateWindow("Interactive Buddy");
 
-	glutKeyboardFunc(myKeys);               // function to run when keys presses occur
-	glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
-    glutReshapeFunc(myReshape);				// function to run when the window gets resized
-    glutDisplayFunc(myDisplay);				// function to run when its time to draw something
-	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
+  glutKeyboardFunc(myKeys);               // function to run when keys presses occur
+  glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
+    glutReshapeFunc(myReshape);       // function to run when the window gets resized
+    glutDisplayFunc(myDisplay);       // function to run when its time to draw something
+  glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
     glutMouseFunc(onMouseButton);
     loadTextures(); //load the texture
     glEnable(GL_TEXTURE_2D);
-	glEnable(GL_DEPTH_TEST);
+  glEnable(GL_DEPTH_TEST);
                   // enable z-buffer depth test
     glShadeModel(GL_SMOOTH);
 
-    glutMainLoop();							// infinite loop that will keep drawing and resizing
+    glutMainLoop();             // infinite loop that will keep drawing and resizing
 
     return 0;
 }
