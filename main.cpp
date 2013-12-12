@@ -108,7 +108,7 @@ GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
 
-GLuint text[] = {0,0,0}; //for one texture. We are only going go to use one
+GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
 
 
 template <typename T>
@@ -118,7 +118,7 @@ std::string to_string(T value){
   return os.str();
 }
 
-void loadTextures(GLuint texture, const char* fname){
+void loadTextures(GLuint texture, const char* fname, int quality){
   FreeImage_Initialise();
   
   //texture one - walls
@@ -131,10 +131,18 @@ void loadTextures(GLuint texture, const char* fname){
     glBindTexture(GL_TEXTURE_2D, texture);
     gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
     glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
+    if(quality == 0){
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
+    }
+    else{
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);  //PUT IN gl_linear for better looks. 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+    }
     
     FreeImage_Unload(finalimage);
    
@@ -143,11 +151,14 @@ void loadTextures(GLuint texture, const char* fname){
 
 
 void loadTextures(){
-  glGenTextures(3, text);
+  glGenTextures(6, text);
 
-  loadTextures(text[0], "assets/brickwall2.png");
-  loadTextures(text[1], "assets/ceiling.png");
-  loadTextures(text[2], "assets/floor.png");
+  loadTextures(text[0], "assets/brickwall2.png", 0);
+  loadTextures(text[1], "assets/ceiling.png", 0);
+  loadTextures(text[2], "assets/floor.png", 0);
+  loadTextures(text[3], "assets/face.png", 1);
+  loadTextures(text[4], "assets/green.png",1);  //for arms if i get to it
+  loadTextures(text[5], "assets/chest.png",1);
 }
 
 
@@ -425,6 +436,30 @@ void drawBoxTextures(){
   glEnd();
 }
 
+void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen::Vector3d point2 /*the bottom*/, double radius){
+  double length = sqrt(pow(point1(0)-point2(0),2.0)+ pow(point1(0)-point2(0),2.0)+pow(point1(0)-point2(0), 2.0)); //distance between the two points
+  glBindTexture(GL_TEXTURE_2D, texture);
+  double num_of_strips = 180.0; //increasing this number might cause performance issues
+  
+  glBegin(GL_QUAD_STRIP);
+    double x, y, z;
+    y = length;
+    for(int i = 0; i <= num_of_strips; i++){
+      double u = i/num_of_strips;
+      x = radius * cos(2*M_PI*u);
+      z = radius * sin(2*M_PI*u);
+      //top vertex
+      //glTexCoord2f(u,0.0); glVertex3f(x+point1(0) ,y+point1(1), z+point1(2));
+      glTexCoord2f(u,0.0); glVertex3f(x ,y, z);
+      //bottom vertex
+      //glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+      glTexCoord2f(u,1.0); glVertex3f(x+point2(0), 0.0+point2(1),  z+point2(2));
+    }
+  glEnd();
+
+}
+
+
 void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
@@ -634,6 +669,18 @@ void myDisplay() {
             renderCylinder_convenient(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2),
                                       l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2),
                                       l->r, subdiv);
+            Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
+            Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
+            if(i == 0) { //this head 
+              //texture id's:(face = 3, 4 = limbs, torso =5)
+              drawBodyTextures(text[3], point1, point2, r);
+            }
+            else if(i == 1){ //this is torso
+              drawBodyTextures(text[5], point1, point2, r);
+            }
+            else{ //arm or leg
+              drawBodyTextures(text[4], point1, point2, r);
+            }
         }
     } else {
         double r = 0.1;
@@ -641,8 +688,8 @@ void myDisplay() {
             renderCylinder_convenient(buddy.limbs[i]->s1->curPos(0), buddy.limbs[i]->s1->curPos(1), buddy.limbs[i]->s1->curPos(2),
                                       buddy.limbs[i]->s2->curPos(0), buddy.limbs[i]->s2->curPos(1), buddy.limbs[i]->s2->curPos(2), 
                                       r, subdiv);
-        } 
-    } 
+            }
+        }  
 
     // Render all time based explosive particles
     for (int i = 0; i < ps.grenades.size(); i++){
