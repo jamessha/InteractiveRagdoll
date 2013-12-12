@@ -5,14 +5,14 @@
 #include <fstream>
 #include <cmath>
 #include <stdio.h>
-#include <irrKlang.h>
+//#include <irrKlang.h>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
 #else
 #include <sys/time.h>
-#include "irrKlang-1.4.0/examples/common/conio.h"
+//#include "irrKlang-1.4.0/examples/common/conio.h"
 #endif
 
 #ifdef OSX
@@ -49,6 +49,7 @@ void junk(){
 #define D_KEY 100
 #define T_KEY 116
 #define F_KEY 102
+#define C_KEY 99
 #define SPACEBAR 32
 #define ZERO 48
 #define ONE 49
@@ -59,8 +60,8 @@ void junk(){
 inline float sqr(float x) { return x*x; }
 
 using namespace std;
-using namespace irrklang;
-#pragma comment(lib, "irrKlang.lib")
+//using namespace irrklang;
+//#pragma comment(lib, "irrKlang.lib")
 
 class Viewport {
 	public:
@@ -87,6 +88,7 @@ bool DEBUG;
 bool texture = true;
 bool wireframe = false;
 bool touching_ground = false;
+bool use_angle_constraints = false;
 int time_since_ground = 0;
 int best_time = 0;
 
@@ -113,7 +115,7 @@ GLfloat cyan_ambient[] = {0, 0.2, 0.2};
 GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
-ISoundEngine* soundengine;
+//ISoundEngine* soundengine;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
 
@@ -183,14 +185,14 @@ void initializeVars() {
     ps.LL = buddy.limbs;
     ps.CC = buddy.body_parts;
     ps.AA = buddy.joint_angles;
-    ps.soundengine = soundengine;
+    //ps.soundengine = soundengine;
 
-    soundengine = createIrrKlangDevice();
+    //soundengine = createIrrKlangDevice();
 
-    if (!soundengine) {
-      cout << "Could not startup engine" << endl;
-       // error starting up the engine
-    }
+    //if (!soundengine) {
+    //  cout << "Could not startup engine" << endl;
+    //   // error starting up the engine
+    //}
 
     if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -240,7 +242,7 @@ void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_z = 0;
   switch(key) {
 	case ESCAPE:
-    soundengine->drop();
+    //soundengine->drop();
 		glutDestroyWindow(windowID);
 		exit(0);
 		break;
@@ -288,6 +290,12 @@ void myKeys(unsigned char key, int x, int y) {
         else
             wireframe = true;
         break;
+    case C_KEY:
+        if (use_angle_constraints)
+            use_angle_constraints = false;
+        else
+            use_angle_constraints = true;
+        break;
     case SPACEBAR:
         fire_primary = true;
         break;
@@ -296,12 +304,12 @@ void myKeys(unsigned char key, int x, int y) {
         break;
     case ONE:
         cout << "Switching to laser" << endl;
-        soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         primary = "laser";
         break;
     case TWO:
         cout << "Switching to rockets" << endl;
-        soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         primary = "rockets";
         break;
 	}
@@ -600,13 +608,13 @@ void drawAcc(){
 }
 
 void fireLaser(){
-    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     drawRay(bullet_start_draw, bullet_end);
     ps.FireRay(bullet_start, bullet_dir, 5);
 } 
 
 void fireRocket(){
-    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
@@ -616,7 +624,7 @@ void fireRocket(){
 } 
 
 void fireGrenade(){
-    soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
@@ -647,8 +655,8 @@ void myDisplay() {
               cam_pos_x, cam_pos_y, cam_pos_z+0.001, // lookat
               0.0, 1.0,  0.0); // up
 
-    soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
-      ,vec3df(0,0,0), vec3df(0,1,0));
+    //soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
+    //  ,vec3df(0,0,0), vec3df(0,1,0));
 
 	glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
@@ -697,10 +705,10 @@ void myDisplay() {
                                       l->r, subdiv);
             Eigen::Vector3d point1(l->node1->curPos(0), l->node1->curPos(1), l->node1->curPos(2));
             Eigen::Vector3d point2(l->node2->curPos(0), l->node2->curPos(1), l->node2->curPos(2));
-            if(i == 0) { //this head 
-              //texture id's:(face = 3, 4 = limbs, torso =5)
-              drawBodyTextures(text[3], point1, point2, r);
-            }
+            //if(i == 0) { //this head 
+            //  //texture id's:(face = 3, 4 = limbs, torso =5)
+            //  drawBodyTextures(text[3], point1, point2, r);
+            //}
             /*else if(i == 1){ //this is torso
               drawBodyTextures(text[5], point1, point2, r);
             }
@@ -788,7 +796,7 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
-    //ps.TimeStep();
+    ps.TimeStep(use_angle_constraints);
    
     glPopMatrix();
     drawHUD();
@@ -815,12 +823,12 @@ int main(int argc, char *argv[]) {
     glutReshapeFunc(myReshape);				// function to run when the window gets resized
     glutDisplayFunc(myDisplay);				// function to run when its time to draw something
 	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
-  glutMouseFunc(onMouseButton);
-  loadTextures(); //load the texture
-  glEnable(GL_TEXTURE_2D);
+    glutMouseFunc(onMouseButton);
+    loadTextures(); //load the texture
+    glEnable(GL_TEXTURE_2D);
 	glEnable(GL_DEPTH_TEST);
                   // enable z-buffer depth test
-  glShadeModel(GL_SMOOTH);
+    glShadeModel(GL_SMOOTH);
 
     glutMainLoop();							// infinite loop that will keep drawing and resizing
 

@@ -16,8 +16,8 @@ class Buddy{
             this->spine_top = new Sphere(0.0, 4.2, 0.3, 0.0, 1.0);
             this->pelvis = new Sphere(0.0, 2.5, 0.0, 0.0, 0.33);
 
-	    this->l_pelvis = new Sphere(-0.35, 2.5, 0.0, 0.0, 0.33);
-	    this->r_pelvis = new Sphere (0.35, 2.5, 0.0, 0.0, 0.33);
+	        this->l_pelvis = new Sphere(-0.35, 2.5, 0.0, 0.0, 0.33);
+	        this->r_pelvis = new Sphere (0.35, 2.5, 0.0, 0.0, 0.33);
 
             this->l_shoulder = new Sphere(-1.25, 4.2, 0.0, 0.0, 1.0);
             this->r_shoulder = new Sphere(1.25, 4.2, 0.0, 0.0, 1.0);
@@ -35,14 +35,14 @@ class Buddy{
             this->r_ankle = new Sphere(0.5, 0.0, 0.0, 0.0, 1.0);
             
             // Init Limbs (enforces distance constraints)
-	    this->r_back = new HardLink(r_pelvis, r_shoulder);
-	    this->l_back = new HardLink(l_pelvis, l_shoulder);
-	    this->pelvis1 = new HardLink(l_pelvis, r_pelvis);
-	    this->pelvis2 = new HardLink(l_pelvis, pelvis);
-	    this->pelvis3 = new HardLink(r_pelvis, pelvis);
+	        this->r_back = new HardLink(r_pelvis, r_shoulder);
+	        this->l_back = new HardLink(l_pelvis, l_shoulder);
+	        this->pelvis1 = new HardLink(l_pelvis, r_pelvis);
+	        this->pelvis2 = new HardLink(l_pelvis, pelvis);
+	        this->pelvis3 = new HardLink(r_pelvis, pelvis);
 
-	    //this->test1 = new HardLink(r_shoulder, r_knee1);
-	    //this->test2 = new HardLink(l_shoulder, l_knee1);
+            //this->test1 = new HardLink(r_shoulder, r_knee1);
+            //this->test2 = new HardLink(l_shoulder, l_knee1);
 
             this->neck = new HardLink(head, spine_top);
             this->clavicle = new HardLink(l_shoulder, r_shoulder);
@@ -59,11 +59,11 @@ class Buddy{
             this->l_ulna2 = new HardLink(l_elbow2, l_wrist);
             this->r_ulna1 = new HardLink(r_elbow1, r_wrist);
             this->r_ulna2 = new HardLink(r_elbow2, r_wrist);
-	    this->l_femur1 = new HardLink(l_pelvis, l_knee1);
+	        this->l_femur1 = new HardLink(l_pelvis, l_knee1);
             this->l_femur2 = new HardLink(l_pelvis, l_knee2);
             this->r_femur1 = new HardLink(r_pelvis, r_knee1);
             this->r_femur2 = new HardLink(r_pelvis, r_knee2);
-	    this->l_tibia1 = new HardLink(l_knee1, l_ankle);
+	        this->l_tibia1 = new HardLink(l_knee1, l_ankle);
             this->l_tibia2 = new HardLink(l_knee2, l_ankle);
             this->r_tibia1 = new HardLink(r_knee1, r_ankle);
             this->r_tibia2 = new HardLink(r_knee2, r_ankle);
@@ -91,8 +91,8 @@ class Buddy{
             this->l_tibia_part = new Cylinder(l_knee1, l_ankle, 0.20);
             this->r_tibia_part = new Cylinder(r_knee1, r_ankle, 0.20);
 	    
-	    this->joints.push_back(l_pelvis);
-	    this->joints.push_back(r_pelvis);
+            this->joints.push_back(l_pelvis);
+            this->joints.push_back(r_pelvis);
 	    
             this->joints.push_back(head);
             this->joints.push_back(spine_top);
@@ -112,14 +112,14 @@ class Buddy{
             this->joints.push_back(l_ankle);
             this->joints.push_back(r_ankle);
 
-	    this->limbs.push_back(r_back);
-	    this->limbs.push_back(l_back);
-	    this->limbs.push_back(pelvis1);
-	    this->limbs.push_back(pelvis2);
-	    this->limbs.push_back(pelvis3);
+            this->limbs.push_back(r_back);
+            this->limbs.push_back(l_back);
+            this->limbs.push_back(pelvis1);
+            this->limbs.push_back(pelvis2);
+            this->limbs.push_back(pelvis3);
 
-	    //this->limbs.push_back(test1);
-	    //this->limbs.push_back(test2);
+            //this->limbs.push_back(test1);
+            //this->limbs.push_back(test2);
 
             this->limbs.push_back(clavicle);
             this->limbs.push_back(spine);

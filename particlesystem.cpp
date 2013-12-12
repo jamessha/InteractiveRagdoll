@@ -1,9 +1,9 @@
 #include <vector>
 #include <stdio.h>
-#include <irrKlang.h>
+//#include <irrKlang.h>
 
 #include "utils.h"
-using namespace irrklang;
+//using namespace irrklang;
 
 //With inspiration from Thomas Jakobsen and that Verlet website
 
@@ -13,7 +13,7 @@ using namespace irrklang;
 //constraints constrains the Particle (by links but right now it's just within a box defined by vectors)
 
 using namespace std;
-#pragma comment(lib, "irrKlang.lib")
+//#pragma comment(lib, "irrKlang.lib")
 
 class Sphere {
     public:
@@ -740,8 +740,8 @@ class ParticleSystem {
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
-        ISoundEngine* soundengine;
-        vector <ISound*> sounds;
+        //ISoundEngine* soundengine;
+        //vector <ISound*> sounds;
 
         ParticleSystem(double box_corner_x, double box_corner_y, double box_corner_z,
                        double box_dims_x, double box_dims_y, double box_dims_z,
@@ -757,9 +757,9 @@ class ParticleSystem {
         } 
 
         void zeroParticleAcc();
-        void TimeStep();
+        void TimeStep(bool use_angle_constraints);
         void Verlet();
-        void SatisfyConstraints();
+        void SatisfyConstraints(bool use_angle_constraints);
         void GetBox(vector<Eigen::Vector3d>& vertices);
         void FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag);
         void CreateExplosion(Explosive* exploder);
@@ -813,17 +813,17 @@ void ApplyExplosiveForce(Explosive* exploder, Sphere* explodee){
 
 void ParticleSystem::CreateExplosion(Explosive* exploder){
     Grenade* explosion = new Grenade(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2), 1.0, 1.0, 2, 0);
-     irrklang::vec3df position(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2));
+     //irrklang::vec3df position(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2));
 
     // start the sound paused:
-    irrklang::ISound* snd = soundengine->play3D("irrKlang-1.4.0/media/bell.wav", position, false, true);
+    //irrklang::ISound* snd = soundengine->play3D("irrKlang-1.4.0/media/bell.wav", position, false, true);
 
-    if (snd)
-    {  
-        snd->setMinDistance(10.0f); // a loud sound
-        snd->setIsPaused(false); // unpause the sound
-    }
-    sounds.push_back(snd);
+    //if (snd)
+    //{  
+    //    snd->setMinDistance(10.0f); // a loud sound
+    //    snd->setIsPaused(false); // unpause the sound
+    //}
+    //sounds.push_back(snd);
 
     explosions.push_back(explosion);
     for (int j = 0; j < grenades.size(); j++) {
@@ -846,11 +846,11 @@ void ParticleSystem::ComputeExplosions(){
     }
 
     // Erase old sounds(been played)
-    for (int i = 0; i < sounds.size(); i++) {
-        if (sounds[i]->isFinished()) {
-            sounds.erase(sounds.begin() + i);
-        }
-    }
+    //for (int i = 0; i < sounds.size(); i++) {
+    //    if (sounds[i]->isFinished()) {
+    //        sounds.erase(sounds.begin() + i);
+    //    }
+    //}
     
     // Compute explosions for grenades
     for (int i = 0; i < grenades.size(); i++) {
@@ -871,16 +871,16 @@ void ParticleSystem::ComputeExplosions(){
     } 
 } 
 
-void ParticleSystem::TimeStep() {
+void ParticleSystem::TimeStep(bool use_angle_constraints) {
     //Check for explosions first and set explosions
     ComputeExplosions(); 
     Verlet();
     for (int i = 0; i < 10; i++){
-        SatisfyConstraints();
+        SatisfyConstraints(use_angle_constraints);
     }
 }
 
-void ParticleSystem::SatisfyConstraints() {
+void ParticleSystem::SatisfyConstraints(bool use_angle_constraints) {
     /*
     for (int i = 0; i < num_particles; i++) {
         Particle part = particles[i];
@@ -939,9 +939,11 @@ void ParticleSystem::SatisfyConstraints() {
             ext_dist = fmax(ext_dist, (*li)->constraints());
         }
     }
-
-    for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
-       (*ai)->constraints();
+    
+    if (use_angle_constraints){
+        for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
+           (*ai)->constraints();
+        }
     }
 }
 
