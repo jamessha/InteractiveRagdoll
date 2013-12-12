@@ -242,7 +242,7 @@ void myKeys(unsigned char key, int x, int y) {
   double temp_cam_pos_z = 0;
   switch(key) {
 	case ESCAPE:
-    //soundengine->drop();
+        //soundengine->drop();
 		glutDestroyWindow(windowID);
 		exit(0);
 		break;
