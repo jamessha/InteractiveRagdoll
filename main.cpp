@@ -130,7 +130,6 @@ GLfloat cyan_ambient[] = {0, 0.2, 0.2};
 GLfloat cyan_diffuse[] = {0, 0.5, 0.5};
 GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
-double accel = 0.5;
 //ISoundEngine* soundengine;
 // sf::SoundBuffer buffer1;
 // sf::SoundBuffer buffer2;
