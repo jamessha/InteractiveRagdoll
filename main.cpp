@@ -5,6 +5,10 @@
 #include <fstream>
 #include <cmath>
 #include <stdio.h>
+#include <SFML/Audio.hpp>
+#include <SFML/System.hpp>
+#include <SFML/Window.hpp>
+#include <iomanip>
 //#include <irrKlang.h>
 
 #ifdef _WIN32
@@ -123,6 +127,15 @@ GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
 double accel = 0.5;
 //ISoundEngine* soundengine;
+sf::SoundBuffer buffer1;
+sf::SoundBuffer buffer2;
+sf::SoundBuffer buffer3;
+sf::SoundBuffer buffer4;
+
+sf::Sound lasersound;
+sf::Sound rocketsound;
+sf::Sound switchsound;
+sf::Sound grenadesound;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
 
@@ -221,6 +234,32 @@ void initializeVars() {
     //  cout << "Could not startup engine" << endl;
     //   // error starting up the engine
     //}
+
+    //set Sounds
+    buffer1;
+    if (!buffer1.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+      cout << "HA" << endl;
+      }
+
+    lasersound.setBuffer(buffer1);
+
+    buffer2;
+    if (!buffer2.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+      }
+    rocketsound.setBuffer(buffer2);
+
+    buffer3;
+    if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+      }
+    grenadesound.setBuffer(buffer3);
+
+    buffer4;
+    if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+
+      }
+    switchsound.setBuffer(buffer4);
 
     if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -348,11 +387,13 @@ void myKeys(unsigned char key, int x, int y) {
     case ONE:
         cout << "Switching to laser" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        switchsound.play();
         primary = "laser";
         break;
     case TWO:
         cout << "Switching to rockets" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        switchsound.play();
         primary = "rockets";
         break;
     case THREE:
@@ -660,12 +701,14 @@ void drawLocation(Eigen::Vector3d buddyLocation){
 
 void fireLaser(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    lasersound.play();
     drawRay(bullet_start_draw, bullet_end);
     ps.FireRay(bullet_start, bullet_dir, 5);
 } 
 
 void fireRocket(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    rocketsound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
@@ -676,6 +719,7 @@ void fireRocket(){
 
 void fireGrenade(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+    grenadesound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
@@ -718,6 +762,7 @@ void fireGrav(){
 
 // function that does the actual drawing of stuff
 void myDisplay() {
+  //lasersound.play();
   
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
