@@ -889,7 +889,6 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
-    ps.TimeStep(use_angle_constraints);
     // Grav gun stuff
     Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
     ps.Grav_Nodes[0]->curPos(0) = ctrl_pt(0);
@@ -901,6 +900,11 @@ void myDisplay() {
     ps.Grav_Nodes[2]->curPos(0) = ctrl_pt(0);
     ps.Grav_Nodes[2]->curPos(1) = ctrl_pt(1) + 1;
     ps.Grav_Nodes[2]->curPos(2) = ctrl_pt(2);
+    //if (ps.Grav.size() == 6){
+    //    closest_buddy->joints[0]->curPos = ctrl_pt + 3*bullet_dir;
+    //} 
+
+    ps.TimeStep(use_angle_constraints);
     
        
     time_since_last_drop += 1;
