@@ -44,9 +44,9 @@ class Buddy{
             //this->test1 = new HardLink(r_shoulder, r_knee1);
             //this->test2 = new HardLink(l_shoulder, l_knee1);
 
-            this->neck = new HardLink(head, spine_top);
-            this->clavicle = new HardLink(l_shoulder, r_shoulder);
+            this->neck  = new HardLink(head, spine_top);
             this->spine = new HardLink(spine_top, pelvis);
+            this->clavicle  = new HardLink(l_shoulder, r_shoulder);
             this->l_scapula = new HardLink(l_shoulder, spine_top);
             this->r_scapula = new HardLink(r_shoulder, spine_top);
             this->l_lat = new HardLink(l_shoulder, pelvis);
@@ -55,10 +55,10 @@ class Buddy{
             this->l_humerus2 = new HardLink(l_shoulder, l_elbow2);
             this->r_humerus1 = new HardLink(r_shoulder, r_elbow1);
             this->r_humerus2 = new HardLink(r_shoulder, r_elbow2);
-            this->l_ulna1 = new HardLink(l_elbow1, l_wrist);
-            this->l_ulna2 = new HardLink(l_elbow2, l_wrist);
-            this->r_ulna1 = new HardLink(r_elbow1, r_wrist);
-            this->r_ulna2 = new HardLink(r_elbow2, r_wrist);
+            this->l_ulna1  = new HardLink(l_elbow1, l_wrist);
+            this->l_ulna2  = new HardLink(l_elbow2, l_wrist);
+            this->r_ulna1  = new HardLink(r_elbow1, r_wrist);
+            this->r_ulna2  = new HardLink(r_elbow2, r_wrist);
 	        this->l_femur1 = new HardLink(l_pelvis, l_knee1);
             this->l_femur2 = new HardLink(l_pelvis, l_knee2);
             this->r_femur1 = new HardLink(r_pelvis, r_knee1);
@@ -70,22 +70,22 @@ class Buddy{
 
             this->l_elbow_joint = new HardLink(l_elbow1, l_elbow2);
             this->r_elbow_joint = new HardLink(r_elbow1, r_elbow2);
-            this->l_knee_joint = new HardLink(l_knee1, l_knee2);
-            this->r_knee_joint = new HardLink(r_knee1, r_knee2);
+            this->l_knee_joint  = new HardLink(l_knee1, l_knee2);
+            this->r_knee_joint  = new HardLink(r_knee1, r_knee2);
 
             // Init Limb Angles (to enforce joint angle constraints)
             this->l_elbow_angle = new SoftAngle(l_humerus2, l_humerus1, l_elbow_joint, l_ulna1, l_ulna2, 180);
             this->r_elbow_angle = new SoftAngle(r_humerus1, r_humerus2, r_elbow_joint, r_ulna2, r_ulna1, 180);
-            this->l_knee_angle = new SoftAngle(l_femur1, l_femur2, l_knee_joint, l_tibia2, l_tibia1, 180);
-            this->r_knee_angle = new SoftAngle(r_femur2, r_femur1, r_knee_joint, r_tibia1, r_tibia2, 180);
+            this->l_knee_angle  = new SoftAngle(l_femur1, l_femur2, l_knee_joint, l_tibia2, l_tibia1, 180);
+            this->r_knee_angle  = new SoftAngle(r_femur2, r_femur1, r_knee_joint, r_tibia1, r_tibia2, 180);
 
             // Init Cylinders (for rendering)
             this->head_part = new Cylinder(head, spine_top, 0.4);
             this->body_part = new Cylinder(spine_top, pelvis, 0.75);
             this->l_humerus_part = new Cylinder(l_shoulder, l_elbow1, 0.20);
             this->r_humerus_part = new Cylinder(r_shoulder, r_elbow1, 0.20);
-            this->l_ulna_part = new Cylinder(l_elbow1, l_wrist, 0.20);
-            this->r_ulna_part = new Cylinder(r_elbow1, r_wrist, 0.20);
+            this->l_ulna_part  = new Cylinder(l_elbow1, l_wrist, 0.20);
+            this->r_ulna_part  = new Cylinder(r_elbow1, r_wrist, 0.20);
             this->l_femur_part = new Cylinder(l_pelvis, l_knee1, 0.20);
             this->r_femur_part = new Cylinder(r_pelvis, r_knee1, 0.20);
             this->l_tibia_part = new Cylinder(l_knee1, l_ankle, 0.20);

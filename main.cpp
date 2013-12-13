@@ -5,10 +5,10 @@
 #include <fstream>
 #include <cmath>
 #include <stdio.h>
-#include <SFML/Audio.hpp>
-#include <SFML/System.hpp>
-#include <SFML/Window.hpp>
-#include <iomanip>
+// #include <SFML/Audio.hpp>
+// #include <SFML/System.hpp>
+// #include <SFML/Window.hpp>
+// #include <iomanip>
 //#include <irrKlang.h>
 
 #ifdef _WIN32
@@ -82,11 +82,16 @@ int windowID;
 double cam_rot_x = 0, cam_rot_y = 0;
 double cam_pos_x = 0, cam_pos_y = 0, cam_pos_z = 0;
 double prev_x, prev_y;
+double accel = 0.5;
 bool perspective;
 Eigen::Vector3d bullet_start;
 Eigen::Vector3d bullet_start_draw;
 Eigen::Vector3d bullet_end;
 Eigen::Vector3d bullet_dir;
+Eigen::Vector3d gun_head;
+Eigen::Vector3d gun_head_draw;
+Eigen::Vector3d gun_end;
+Eigen::Vector3d gun_dir;
 bool fire_primary = false;
 bool fire_secondary = false;
 string primary = "laser";
@@ -127,18 +132,18 @@ GLfloat cyan_specular[] = {0.8, 0.8, 0.8};
 GLfloat shininess[] = {8.0};
 double accel = 0.5;
 //ISoundEngine* soundengine;
-sf::SoundBuffer buffer1;
-sf::SoundBuffer buffer2;
-sf::SoundBuffer buffer3;
-sf::SoundBuffer buffer4;
+// sf::SoundBuffer buffer1;
+// sf::SoundBuffer buffer2;
+// sf::SoundBuffer buffer3;
+// sf::SoundBuffer buffer4;
 
-sf::Sound lasersound;
-sf::Sound rocketsound;
-sf::Sound switchsound;
-sf::Sound grenadesound;
+// sf::Sound lasersound;
+// sf::Sound rocketsound;
+// sf::Sound switchsound;
+// sf::Sound grenadesound;
 
 GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
-
+//Gluint gun_texture[1] = {0};
 
 //Taken from online, as older compilers do not include
 template <typename T>
@@ -182,7 +187,7 @@ void loadTextures(GLuint texture, const char* fname, int quality){
 
 void loadTextures(){
   glGenTextures(6, text);
-
+  //  glGenTextures(1, gun_texture);
   loadTextures(text[0], "assets/brickwall2.png", 0);
   loadTextures(text[1], "assets/ceiling.png", 0);
   loadTextures(text[2], "assets/floor.png", 0);
@@ -236,30 +241,30 @@ void initializeVars() {
     //}
 
     //set Sounds
-    buffer1;
-    if (!buffer1.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
-      cout << "HA" << endl;
-      }
+    // buffer1;
+    // if (!buffer1.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+    //   cout << "HA" << endl;
+    //   }
 
-    lasersound.setBuffer(buffer1);
+    // lasersound.setBuffer(buffer1);
 
-    buffer2;
-    if (!buffer2.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+    // buffer2;
+    // if (!buffer2.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
 
-      }
-    rocketsound.setBuffer(buffer2);
+    //   }
+    // rocketsound.setBuffer(buffer2);
 
-    buffer3;
-    if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+    // buffer3;
+    // if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
 
-      }
-    grenadesound.setBuffer(buffer3);
+    //   }
+    // grenadesound.setBuffer(buffer3);
 
-    buffer4;
-    if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
+    // buffer4;
+    // if (!buffer3.loadFromFile("irrKlang-1.4.0/media/explosion.wav")) {
 
-      }
-    switchsound.setBuffer(buffer4);
+    //   }
+    // switchsound.setBuffer(buffer4);
 
     if(DEBUG){  //write out the box vertices
       ofstream myfile;
@@ -294,46 +299,47 @@ bool withinBoxBoundry(double pos_x, double pos_z){
 
 // function that handles keyboard events
 void myKeys(unsigned char key, int x, int y) {
-  double temp_cam_pos_x = 0;
-  double temp_cam_pos_z = 0;
-  switch(key) {
-  case ESCAPE:
-        //soundengine->drop();
-    glutDestroyWindow(windowID);
-    exit(0);
-    break;
-  case W_KEY:
-    temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
-    temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
-    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-      cam_pos_x = temp_cam_pos_x;
-      cam_pos_z = temp_cam_pos_z;
-    }
-    break;
-  case A_KEY:
-    temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
-    temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
-    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-      cam_pos_x = temp_cam_pos_x;
-      cam_pos_z = temp_cam_pos_z;
-    }
-    break;
-  case S_KEY:
-    temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
-    temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
-    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-      cam_pos_x = temp_cam_pos_x;
-      cam_pos_z = temp_cam_pos_z;
-    }
-    break;
-  case D_KEY:
-    temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
-    temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
-    if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-      cam_pos_x = temp_cam_pos_x;
-      cam_pos_z = temp_cam_pos_z;
-    }
-    break;
+    double temp_cam_pos_x = 0;
+    double temp_cam_pos_z = 0;
+
+    switch(key) {
+    case ESCAPE:
+          //soundengine->drop();
+        glutDestroyWindow(windowID);
+        exit(0);
+        break;
+    case W_KEY:
+        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case A_KEY:
+        temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case S_KEY:
+        temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case D_KEY:
+        temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
     case T_KEY:
         if (texture)
             texture = false;
@@ -387,13 +393,13 @@ void myKeys(unsigned char key, int x, int y) {
     case ONE:
         cout << "Switching to laser" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
-        switchsound.play();
+        // switchsound.play();
         primary = "laser";
         break;
     case TWO:
         cout << "Switching to rockets" << endl;
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
-        switchsound.play();
+        // switchsound.play();
         primary = "rockets";
         break;
     case THREE:
@@ -407,8 +413,54 @@ void myKeys(unsigned char key, int x, int y) {
 
 // function that handles special key events
 void mySpecial(int key, int x, int y) {
-    int modifier = glutGetModifiers();
-    glutPostRedisplay();
+	int modifier = glutGetModifiers();
+
+	double temp_cam_pos_x = 0;
+	double temp_cam_pos_z = 0;
+
+	switch(key) {
+	case GLUT_KEY_RIGHT:
+		temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_LEFT:
+		temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_UP:
+        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.05;
+		else accel = 0.5;
+		break;
+	case GLUT_KEY_DOWN:
+		temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
+		temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+		if (modifier == GLUT_ACTIVE_CTRL) accel += 0.5;
+		else accel = 0.5;
+		break;
+	}
+	glutPostRedisplay();
 }
 
 // function that handles mouse movement
@@ -583,6 +635,43 @@ void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
 
+void drawGun() {
+	GLUquadricObj *gun = gluNewQuadric();
+
+	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
+		             cam_pos_y - cos(cam_rot_x),
+		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
+    gun_head << cam_pos_x, cam_pos_y, cam_pos_z;
+    gun_dir  << cos(cam_rot_x)*sin(cam_rot_y),
+		        sin(cam_rot_x),
+		        cos(cam_rot_y)*cos(cam_rot_x);
+    gun_dir.normalize();
+ 	gun_end = gun_head + 1.5*gun_dir;
+
+	/*	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
+	gluQuadricTexture(gun, GL_TRUE); 
+	gluQuadricDrawStyle(gun, GLU_FILL); 
+	glPolygonMode(GL_FRONT, GL_FILL); 
+	gluQuadricNormals(gun, GLU_SMOOTH);
+	gluCylinder(gun, 3.0, 0.0, 6.0, 20, 100);*/
+
+	
+	/*renderCylinder_convenient(sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x,
+							  -cos(cam_rot_x)+cam_pos_y,
+							  sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z,
+							  gun_end(0), gun_end(1), gun_end(2), 0.15, 20);*/
+}
+
+/*void drawGunTexture() {
+	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_FLOAT, textureMap);
+	}*/
+
 void drawHUD(){
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -701,14 +790,14 @@ void drawLocation(Eigen::Vector3d buddyLocation){
 
 void fireLaser(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
-    lasersound.play();
+    // lasersound.play();
     drawRay(bullet_start_draw, bullet_end);
     ps.FireRay(bullet_start, bullet_dir, 5);
 } 
 
 void fireRocket(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
-    rocketsound.play();
+    // rocketsound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
@@ -719,7 +808,7 @@ void fireRocket(){
 
 void fireGrenade(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
-    grenadesound.play();
+    // grenadesound.play();
     Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
     Eigen::Vector3d oldPos = curPos - bullet_dir;
     Grenade* explosive = new Grenade(curPos(0), curPos(1), curPos(2),
@@ -809,6 +898,8 @@ void myDisplay() {
     // Render Box
     drawBox();
 
+	// Draw gun
+	drawGun();
 
     //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
@@ -982,8 +1073,8 @@ int main(int argc, char *argv[]) {
     glutMouseFunc(onMouseButton);
     loadTextures(); //load the texture
     glEnable(GL_TEXTURE_2D);
-  glEnable(GL_DEPTH_TEST);
-                  // enable z-buffer depth test
+	glEnable(GL_DEPTH_TEST); // enable z-buffer depth test
+	
     glShadeModel(GL_SMOOTH);
 
     glutMainLoop();             // infinite loop that will keep drawing and resizing

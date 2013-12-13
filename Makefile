@@ -7,8 +7,8 @@ ifeq ($(shell sw_vers 2>/dev/null | grep Mac | awk '{ print $$2}'),Mac)
 	 	
 else
 	CFLAGS = -g -DGL_GLEXT_PROTOTYPES -Iglut-3.7.6-bin\
-		-ISFML-2.1/include -I/usr/local/include -I/usr/include -I/home/ff/cs184/eigen -I/usr/include/eigen3 -pthread -O3 
-	LDFLAGS = -LSFML-2.1/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -ljpeg -lGL -lGLU -lm -lstdc++ -lglut -lfreeimage -L./FreeImage \
+		-I/usr/local/include -I/usr/include -I/home/ff/cs184/eigen -I/usr/include/eigen3 -pthread -O3 
+	LDFLAGS = -ljpeg -lGL -lGLU -lm -lstdc++ -lglut -lfreeimage -L./FreeImage \
 
 endif
 
