@@ -91,12 +91,11 @@ class Buddy{
             this->l_tibia_part = new Cylinder(l_knee1, l_ankle, 0.20);
             this->r_tibia_part = new Cylinder(r_knee1, r_ankle, 0.20);
 	    
-            this->joints.push_back(l_pelvis);
-            this->joints.push_back(r_pelvis);
-	    
             this->joints.push_back(head);
             this->joints.push_back(spine_top);
             this->joints.push_back(pelvis);
+            this->joints.push_back(l_pelvis);
+            this->joints.push_back(r_pelvis);
             this->joints.push_back(l_shoulder);
             this->joints.push_back(r_shoulder);
             this->joints.push_back(l_elbow1);

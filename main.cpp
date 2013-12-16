@@ -60,6 +60,7 @@ void junk(){
 #define ZERO 48
 #define ONE 49
 #define TWO 50
+#define THREE 51
 
 #define PI 3.14159265
 //#define GL_GLEXT_PROTOTYPES
@@ -105,6 +106,8 @@ int time_since_ground = 0;
 int best_time = 0;
 
 vector<Buddy*> buddies;
+double closest_buddy_dist = 99999999999;
+Buddy* closest_buddy;
 Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
@@ -201,6 +204,22 @@ void initializeBuddy() {
     buddies.push_back(buddy);
 }
 
+void initializeSelf(){
+    Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
+    Sphere* s1 = new Sphere(ctrl_pt(0), ctrl_pt(1), ctrl_pt(2), 0, 9001);
+    Sphere* s2 = new Sphere(ctrl_pt(0)+1, ctrl_pt(1), ctrl_pt(2), 0, 9001);
+    Sphere* s3 = new Sphere(ctrl_pt(0), ctrl_pt(1)+1, ctrl_pt(2), 0, 9001);
+    HardLink* h1 = new HardLink(s1, s2);
+    HardLink* h2 = new HardLink(s1, s3);
+    HardLink* h3 = new HardLink(s2, s3);
+    ps.Grav_Nodes.push_back(s1);
+    ps.Grav_Nodes.push_back(s2);
+    ps.Grav_Nodes.push_back(s3);
+    ps.Grav.push_back(h1);
+    ps.Grav.push_back(h2);
+    ps.Grav.push_back(h3);
+} 
+
 // function that sets up global variables etc
 void initializeVars() {
     perspective = false;  //on default, perspective is turned on. This is just for testing out purposes later.
@@ -210,6 +229,7 @@ void initializeVars() {
     ps.GetBox(box_verts);
     ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2));
     initializeBuddy();
+    initializeSelf();
     //ps.soundengine = soundengine;
 
     //soundengine = createIrrKlangDevice();
@@ -278,48 +298,48 @@ bool withinBoxBoundry(double pos_x, double pos_z){
 
 // function that handles keyboard events
 void myKeys(unsigned char key, int x, int y) {
-  double temp_cam_pos_x = 0;
-  double temp_cam_pos_z = 0;
+    double temp_cam_pos_x = 0;
+    double temp_cam_pos_z = 0;
 
-  switch(key) {
-  case ESCAPE:
-        //soundengine->drop();
-	  glutDestroyWindow(windowID);
-	  exit(0);
-	  break;
-  case W_KEY:
-	  temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*0.5;
-	  temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*0.5;
-	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-		  cam_pos_x = temp_cam_pos_x;
-		  cam_pos_z = temp_cam_pos_z;
-	  }
-	  break;
-  case A_KEY:
-	  temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*0.5;
-	  temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*0.5;
-	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-		  cam_pos_x = temp_cam_pos_x;
-		  cam_pos_z = temp_cam_pos_z;
-	  }
-	  break;
-  case S_KEY:
-	  temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*0.5;
-	  temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*0.5;
-	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-		  cam_pos_x = temp_cam_pos_x;
-		  cam_pos_z = temp_cam_pos_z;
-	  }
-	  break;
-  case D_KEY:
-	  temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*0.5;
-	  temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*0.5;
-	  if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
-		  cam_pos_x = temp_cam_pos_x;
-		  cam_pos_z = temp_cam_pos_z;
-	  }
-	  break;
-  case T_KEY:
+    switch(key) {
+    case ESCAPE:
+          //soundengine->drop();
+        glutDestroyWindow(windowID);
+        exit(0);
+        break;
+    case W_KEY:
+        temp_cam_pos_x = cam_pos_x + sin(cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z + cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case A_KEY:
+        temp_cam_pos_x = cam_pos_x + sin(PI/2+cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z + cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case S_KEY:
+        temp_cam_pos_x = cam_pos_x - sin(cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z - cos(cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case D_KEY:
+        temp_cam_pos_x = cam_pos_x - sin(PI/2+cam_rot_y)*accel;
+        temp_cam_pos_z = cam_pos_z - cos(PI/2+cam_rot_y)*accel;
+        if(withinBoxBoundry(temp_cam_pos_x, temp_cam_pos_z)){
+          cam_pos_x = temp_cam_pos_x;
+          cam_pos_z = temp_cam_pos_z;
+        }
+        break;
+    case T_KEY:
         if (texture)
             texture = false;
         else
@@ -380,6 +400,11 @@ void myKeys(unsigned char key, int x, int y) {
         //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
         // switchsound.play();
         primary = "rockets";
+        break;
+    case THREE:
+        cout << "Switching to gravity gun" << endl;
+        //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
+        primary = "grav";
         break;
   }
   glutPostRedisplay();
@@ -531,7 +556,6 @@ void drawBox(){
     renderCylinder_convenient(box_verts[3](0), box_verts[3](1), box_verts[3](2),
                               box_verts[7](0), box_verts[7](1), box_verts[7](2),
                               radius, slices);
-
 } 
 
 void drawBoxTextures(){
@@ -792,6 +816,38 @@ void fireGrenade(){
     ps.grenades.push_back(explosive);
 } 
 
+void fireGrav(){
+    if (ps.Grav.size() == 3){
+        closest_buddy_dist = 99999999999;
+        for (int i = 0; i < buddies.size(); i++){
+            Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
+            double dist = (ctrl_pt - buddies[i]->joints[0]->curPos).norm();
+            if (dist < closest_buddy_dist){
+                closest_buddy_dist = dist;
+                closest_buddy = buddies[i];
+            } 
+        } 
+        if (closest_buddy_dist > 10)
+            return;
+        Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
+        Sphere* hold_joint = closest_buddy->joints[0];
+        hold_joint->curPos = ctrl_pt + 3*bullet_dir;
+        HardLink* h1 = new HardLink(ps.Grav_Nodes[0], closest_buddy->joints[0]);
+        HardLink* h2 = new HardLink(ps.Grav_Nodes[1], closest_buddy->joints[0]);
+        HardLink* h3 = new HardLink(ps.Grav_Nodes[2], closest_buddy->joints[0]);
+        ps.Grav.push_back(h1);
+        ps.Grav.push_back(h2);
+        ps.Grav.push_back(h3);
+    } else {
+        ps.Grav.clear();
+        ps.Grav_Nodes.clear();
+        initializeSelf();
+        for (int i = 0; i < closest_buddy->joints.size(); i++){
+            closest_buddy->joints[i]->oldPos -= 10*bullet_dir;
+        }
+    } 
+} 
+
 // function that does the actual drawing of stuff
 void myDisplay() {
   //lasersound.play();
@@ -942,6 +998,8 @@ void myDisplay() {
             fireLaser();
         else if (primary == "rockets")
             fireRocket();
+        else if (primary == "grav")
+            fireGrav();
         fire_primary = false;
     }
 
@@ -966,7 +1024,24 @@ void myDisplay() {
         if (time_since_ground > best_time)
             best_time = time_since_ground;
     } 
+    // Grav gun stuff
+    Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
+    ps.Grav_Nodes[0]->curPos(0) = ctrl_pt(0);
+    ps.Grav_Nodes[0]->curPos(1) = ctrl_pt(1);
+    ps.Grav_Nodes[0]->curPos(2) = ctrl_pt(2);
+    ps.Grav_Nodes[1]->curPos(0) = ctrl_pt(0) + 1;
+    ps.Grav_Nodes[1]->curPos(1) = ctrl_pt(1);
+    ps.Grav_Nodes[1]->curPos(2) = ctrl_pt(2);
+    ps.Grav_Nodes[2]->curPos(0) = ctrl_pt(0);
+    ps.Grav_Nodes[2]->curPos(1) = ctrl_pt(1) + 1;
+    ps.Grav_Nodes[2]->curPos(2) = ctrl_pt(2);
+    //if (ps.Grav.size() == 6){
+    //    closest_buddy->joints[0]->curPos = ctrl_pt + 3*bullet_dir;
+    //} 
+
     ps.TimeStep(use_angle_constraints);
+    
+       
     time_since_last_drop += 1;
    
     glPopMatrix();
@@ -974,7 +1049,7 @@ void myDisplay() {
 
     glFlush();
     glutSwapBuffers();
-  glutPostRedisplay();
+    glutPostRedisplay();
   
 }
 

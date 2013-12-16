@@ -866,8 +866,10 @@ public:
 
 class ParticleSystem {
     public:
+        vector <Sphere*> Grav_Nodes;
         vector <Sphere*> SS;
         vector <Link*> LL;
+        vector <Link*> Grav;
         vector <Cylinder*> CC;
         double dtimestep;
         vector <Angle*> AA;
@@ -1074,6 +1076,12 @@ void ParticleSystem::SatisfyConstraints(bool use_angle_constraints) {
         ext_dist = 0;
         for (li = LL.begin(); li != LL.end(); ++li) {
             ext_dist = fmax(ext_dist, (*li)->constraints());
+        }
+    }
+    for (int i = 0; i < 100; i++){
+        ext_dist = 0;
+        for (int j = 0; j < Grav.size(); j++){         
+            ext_dist = fmax(ext_dist, Grav[j]->constraints());
         }
     }
     
