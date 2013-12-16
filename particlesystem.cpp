@@ -727,6 +727,143 @@ class HardAngle : public Angle {
         }
 };
 
+class restrictedRotationAngle {
+        /*              s4
+                    /\
+               L5  /  \  L4
+                s2/____\s3
+                  \ L3 /
+               L1  \  /  L2
+                    \/
+                    s1
+
+        Above is diagram from angle constraints. this is 180 degrees. so fron should be pointing into the picture
+        Thus take the cross of hingCenter->s4 to s3->s2 so this is pointing to the front.
+
+        Front is defined by passing in and storing the position of the pelvis->l_pelvis crossed with spine.
+
+        This class is always restricted to 180 degrees region defined by front.
+
+        Create an angle constraint as shown above
+        The diagram above is 180 degrees.
+        Rotate right hand rule around vector (s2-s3).
+    */
+public:
+    Sphere *l_pelvis, *pelvis, *spine_top, 
+        *s1, *s2, *s3, *s4;
+    restrictedRotationAngle() {}
+
+    restrictedRotationAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+        //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
+        //into the above diagram.
+        if (l1->s1 == l2->s1) {
+            this->s1 = l1->s1;
+            this->s2 = l1->s2;
+            this->s3 = l2->s2;
+        } else if (l1->s1 == l2->s2) {
+            this->s1 = l1->s1;
+            this->s2 = l1->s2;
+            this->s3 = l2->s1;
+        } else if (l1->s2 == l2->s1) {
+            this->s1 = l1->s2;
+            this->s2 = l1->s1;
+            this->s3 = l2->s2;
+        } else if (l1->s2 == l2->s2) {
+            this->s1 = l1->s2;
+            this->s2 = l1->s1;
+            this->s3 = l2->s1;
+        }
+        if (l4->s1 == l5->s1) {
+            this->s4 = l4->s1;
+        } else if (l4->s1 == l5->s2) {
+            this->s4 = l4->s1;
+        } else if (l4->s2 == l5->s1) {
+            this->s4 = l4->s2;
+        } else if (l4->s2 == l5->s2) {
+            this->s4 = l4->s2;
+        }
+
+        this->l_pelvis = l_pelvis;
+        this->pelvis = pelvis;
+        this->spine_top = spine_top;
+    }
+
+    restrictedRotationAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+        s1 = ss1;
+        s2 = ss2;
+        s3 = ss3;
+        s4 = ss4;
+        this->l_pelvis = l_pelvis;
+        this->pelvis = pelvis;
+        this->spine_top = spine_top;
+    }
+
+    void constraints() {
+        //Calculate the front vector
+        Eigen::Vector3d front = (l_pelvis->curPos - pelvis->curPos).cross(spine_top->curPos - pelvis->curPos).normalized();
+
+        //Calculate the orientation of the knee
+        Eigen::Vector3d hingeCenter = (s2->curPos - s3->curPos)/2 + s3->curPos;
+        Eigen::Vector3d knee_orientation = (s3->curPos - hingeCenter).cross(s1->curPos - hingeCenter);
+
+        //See if valid rotation angle, if it just return
+        if (front.dot(knee_orientation) >= 0) {
+            return;
+        }
+
+        //calculate the angle between the knee_orientation and the front vector, to determine how much to rotate
+        double angle = acos(front.dot(knee_orientation)/(front.norm() * knee_orientation.norm()));
+
+        //how much we want to actually rotate
+        double rotation_amount = angle - 3.1415926535/2;
+        Eigen::Matrix3d rotation;
+        rotation = AngleAxisd(rotation_amount,s1->curPos - hingeCenter);
+
+        Eigen::Vector3d newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d newPosS2 = rotation * (s2->curPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d newPosS1 = s1->curPos;
+
+        Eigen::Vector3d oldPosS4 = rotation * (s4->oldPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d oldPosS3 = rotation * (s3->oldPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d oldPosS2 = rotation * (s2->oldPos - s1->curPos) + s1->curPos;
+        Eigen::Vector3d oldPosS1 = rotation * (s1->oldPos - s1->curPos) + s1->curPos;
+
+        //Calculate adjusted orientation of the knee
+        Eigen::Vector3d adj_hingeCenter = (newPosS2 - newPosS3)/2 + newPosS3;
+        Eigen::Vector3d adj_knee_orientation = (newPosS3 - adj_hingeCenter).cross(newPosS1 - adj_hingeCenter);
+
+        if (front.dot(adj_knee_orientation) >= -1e-3) {
+            s1->curPos = newPosS1; s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
+            s2->curPos = newPosS2; s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
+            s3->curPos = newPosS3; s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
+            s4->curPos = newPosS4; s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+            return;
+        }
+
+        rotation = AngleAxisd(rotation_amount, hingeCenter - s1->curPos);
+
+        newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
+        newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;
+        newPosS2 = rotation * (s2->curPos - s1->curPos) + s1->curPos;
+        newPosS1 = s1->curPos;
+
+        oldPosS4 = rotation * (s4->oldPos - s1->curPos) + s1->curPos;
+        oldPosS3 = rotation * (s3->oldPos - s1->curPos) + s1->curPos;
+        oldPosS2 = rotation * (s2->oldPos - s1->curPos) + s1->curPos;
+        oldPosS1 = rotation * (s1->oldPos - s1->curPos) + s1->curPos;
+
+        s1->curPos = newPosS1; s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
+        s2->curPos = newPosS2; s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
+        s3->curPos = newPosS3; s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
+        s4->curPos = newPosS4; s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+
+        return;
+    }
+
+};
+
+
 class ParticleSystem {
     public:
         vector <Sphere*> SS;
