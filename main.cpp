@@ -111,8 +111,7 @@ Buddy* closest_buddy;
 Eigen::Vector3d box_corner(-75, -10, -75);
 Eigen::Vector3d box_dims(150, 150, 150);
 ParticleSystem ps(box_corner(0), box_corner(1), box_corner(2),
-                  box_dims(0), box_dims(1), box_dims(2),
-                  0.05);
+                  box_dims(0), box_dims(1), box_dims(2), 0.05);
 vector<Eigen::Vector3d> box_verts;
 Eigen::Vector3d gravAcc(0.0, -2.0, 0.0);
 
@@ -141,8 +140,7 @@ GLfloat shininess[] = {8.0};
 // sf::Sound switchsound;
 // sf::Sound grenadesound;
 
-GLuint text[] = {0,0,0,0,0,0}; //for one texture. We are only going go to use one
-//Gluint gun_texture[1] = {0};
+GLuint text[] = {0,0,0,0,0, 0, 0};//, 0}; //for one texture. We are only going go to use one
 
 //Taken from online, as older compilers do not include
 template <typename T>
@@ -163,21 +161,23 @@ void loadTextures(GLuint texture, const char* fname, int quality){
    
     
     glBindTexture(GL_TEXTURE_2D, texture);
-    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
+    gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, iwidth, iheight,
+					  GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(finalimage));
     glGenerateMipmap(GL_TEXTURE_2D);
     if(quality == 0){
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);  //PUT IN gl_linear for better looks. 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	  //PUT IN gl_linear for better looks. 
     }
     else{
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
       glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);  //PUT IN gl_linear for better looks. 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+	  //PUT IN gl_linear for better looks. 
     }
-    
     FreeImage_Unload(finalimage);
    
   FreeImage_DeInitialise();
@@ -185,14 +185,16 @@ void loadTextures(GLuint texture, const char* fname, int quality){
 
 
 void loadTextures(){
-  glGenTextures(6, text);
-  //  glGenTextures(1, gun_texture);
+  glGenTextures(7, text);
   loadTextures(text[0], "assets/brickwall2.png", 0);
-  loadTextures(text[1], "assets/ceiling.png", 0);
-  loadTextures(text[2], "assets/floor.png", 0);
-  loadTextures(text[3], "assets/face.png", 1);
-  loadTextures(text[4], "assets/green.png",1);  //for arms if i get to it
-  loadTextures(text[5], "assets/chest.png",1);
+  loadTextures(text[1], "assets/ceiling.png",    0);
+  loadTextures(text[2], "assets/floor.png",      0);
+  loadTextures(text[3], "assets/face.png",  1);
+  loadTextures(text[4], "assets/green.png", 1);  //for arms if i get to it
+  loadTextures(text[5], "assets/chest.png", 1);
+  loadTextures(text[6], "assets/gun_laser.png",  0);
+  loadTextures(text[7], "assets/gun_rocket.png", 0);
+//loadTextures(text[8], "assets/gun_gravity.png", 1);
 }
 
 void initializeBuddy() {
@@ -563,33 +565,33 @@ void drawBoxTextures(){
   glBegin(GL_QUADS);
     //face one - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
-    //face two - wall
-    glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
-    //face three - wall
-    glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
-    //face four - wall
+	glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
+	glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+	glTexCoord2f(1, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
+	//face two - wall
+	glTexCoord2f(0, 0); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+	glTexCoord2f(0, 1); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
+	glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+	glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
+	//face three - wall
+	glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
+	glTexCoord2f(0, 1); glVertex3f(box_verts[0](0),box_verts[0](1),box_verts[0](2));
+	glTexCoord2f(1, 1); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+	glTexCoord2f(1, 0); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
+	//face four - wall
     glTexCoord2f(0, 0); glVertex3f(box_verts[7](0),box_verts[7](1),box_verts[7](2));
-    glTexCoord2f(0, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
+	glTexCoord2f(0, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+	glTexCoord2f(1, 1); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+	glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
   glEnd();
-
+  
   //face 5 - floor
   glBindTexture(GL_TEXTURE_2D, text[1]);
   glBegin(GL_QUADS);
     glTexCoord2f(0, 0); glVertex3f(box_verts[1](0),box_verts[1](1),box_verts[1](2));
     glTexCoord2f(0, 1); glVertex3f(box_verts[5](0),box_verts[5](1),box_verts[5](2));
-    glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
-    glTexCoord2f(1, 0); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
+	glTexCoord2f(1, 1); glVertex3f(box_verts[6](0),box_verts[6](1),box_verts[6](2));
+	glTexCoord2f(1, 0); glVertex3f(box_verts[2](0),box_verts[2](1),box_verts[2](2));
   glEnd();
   
   //face 6 - floor
@@ -601,6 +603,70 @@ void drawBoxTextures(){
     glTexCoord2f(1, 0); glVertex3f(box_verts[3](0),box_verts[3](1),box_verts[3](2));
   glEnd();
 }
+
+
+void drawGun() {
+	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
+		             cam_pos_y - cos(cam_rot_x),
+		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
+    gun_head << cam_pos_x, cam_pos_y, cam_pos_z;
+    gun_dir  << cos(cam_rot_x)*sin(cam_rot_y),
+		        sin(cam_rot_x),
+		        cos(cam_rot_y)*cos(cam_rot_x);
+    gun_dir.normalize();
+ 	gun_end = gun_head + 1.5*gun_dir;
+
+	/*	GLUquadricObj *gun = gluNewQuadric();
+	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
+	gluQuadricTexture(gun, GL_TRUE); 
+	gluQuadricDrawStyle(gun, GLU_FILL); 
+	glPolygonMode(GL_FRONT, GL_FILL); 
+	gluQuadricNormals(gun, GLU_SMOOTH);
+	gluCylinder(gun, 3.0, 0.0, 6.0, 20, 100);*/	
+}
+
+void drawGunTextures() {
+	//glPushMatrix();
+	if (primary == "laser") {
+		glBindTexture(GL_TEXTURE_2D, text[6]);
+	} else if (primary == "rockets") {
+		glBindTexture(GL_TEXTURE_2D, text[7]);
+		/*} else if (primary == "grav") {
+		  glBindTexture(GL_TEXTURE_2D, [8]);*/
+	}
+	//glDisable(GL_TEXTURE_GEN_S);
+	//glDisable(GL_TEXTURE_GEN_T);
+
+	//glFrontFace(GL_CW);
+	glBegin(GL_QUAD_STRIP);
+	int sides = 360, radius = 1.1, len = 6;
+	for (int i = 0; i <= sides; i++) {
+		double u = i / (double) sides;
+		glTexCoord2d(0, u);   glVertex3d(cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u) ,
+										 cam_pos_y - cos(cam_rot_x),
+										 cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y) + radius*sin(2*PI*u));
+		glTexCoord2d(1, u);   glVertex3d(cam_pos_x + len*cos(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u),
+										 cam_pos_y + len*sin(cam_rot_x),
+										 cam_pos_z + len*cos(cam_rot_y)*cos(cam_rot_x) + radius*sin(2*PI*u));
+	}
+	glEnd();
+	//glPopMatrix();
+
+	/*glBegin(GL_QUAD_STRIP);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_FLOAT, textureMap);*/
+
+	/*glBindTexture(GL_TEXTURE_2D, text[0]);
+	glBegin(GL_QUADS);
+      glTexCoord2f(0, 0); glVertex3f(box_verts[4](0),box_verts[4](1),box_verts[4](2));
+	glEnd();*/
+
+}
+
 
 void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen::Vector3d point2 /*the bottom*/, double radius){
   double length = sqrt(pow(point1(0)-point2(0),2.0)+ pow(point1(0)-point2(0),2.0)+pow(point1(0)-point2(0), 2.0)); //distance between the two points
@@ -626,50 +692,12 @@ void drawBodyTextures(GLuint texture, Eigen::Vector3d point1 /*the top*/, Eigen:
 
 }
 
-
 void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
     renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
-
-void drawGun() {
-	GLUquadricObj *gun = gluNewQuadric();
-
-	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
-		             cam_pos_y - cos(cam_rot_x),
-		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
-    gun_head << cam_pos_x, cam_pos_y, cam_pos_z;
-    gun_dir  << cos(cam_rot_x)*sin(cam_rot_y),
-		        sin(cam_rot_x),
-		        cos(cam_rot_y)*cos(cam_rot_x);
-    gun_dir.normalize();
- 	gun_end = gun_head + 1.5*gun_dir;
-
-	/*	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
-	gluQuadricTexture(gun, GL_TRUE); 
-	gluQuadricDrawStyle(gun, GLU_FILL); 
-	glPolygonMode(GL_FRONT, GL_FILL); 
-	gluQuadricNormals(gun, GLU_SMOOTH);
-	gluCylinder(gun, 3.0, 0.0, 6.0, 20, 100);*/
-
-	
-	/*renderCylinder_convenient(sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x,
-							  -cos(cam_rot_x)+cam_pos_y,
-							  sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z,
-							  gun_end(0), gun_end(1), gun_end(2), 0.15, 20);*/
-}
-
-/*void drawGunTexture() {
-	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_FLOAT, textureMap);
-	}*/
 
 void drawHUD(){
     glMatrixMode(GL_PROJECTION);
@@ -851,7 +879,6 @@ void fireGrav(){
 // function that does the actual drawing of stuff
 void myDisplay() {
   //lasersound.play();
-  
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();                              // reset transformations
@@ -894,16 +921,15 @@ void myDisplay() {
 
     glPushMatrix();
     
-    // Render Box
-    drawBox();
-
-	// Draw gun
-	drawGun();
+    drawBox(); // Render Box
+	drawGun(); // Render gun
 
     //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
-    if (texture)
+    if (texture) {
         drawBoxTextures();
+		drawGunTextures();
+	}
 
     //ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
     //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
@@ -986,7 +1012,7 @@ void myDisplay() {
 
     // Weapons logic
     bullet_start_draw << sin(cam_rot_x)*sin(cam_rot_y)+cam_pos_x, 
-                         -cos(cam_rot_x)+cam_pos_y, 
+                        -cos(cam_rot_x)+cam_pos_y, 
                          sin(cam_rot_x)*cos(cam_rot_y)+cam_pos_z;
     bullet_start << cam_pos_x, cam_pos_y, cam_pos_z;
     bullet_dir << cos(cam_rot_x)*sin(cam_rot_y), sin(cam_rot_x), cos(cam_rot_y)*cos(cam_rot_x);
@@ -1054,29 +1080,26 @@ void myDisplay() {
 }
 
 int main(int argc, char *argv[]) {
-
     initializeVars();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(viewport.w, viewport.h);
-    
-  
+    glutInitWindowSize(viewport.w, viewport.h);    
     glutInitWindowPosition(100, 100);
-  windowID = glutCreateWindow("Interactive Buddy");
+    windowID = glutCreateWindow("Interactive Buddy");
 
-  glutKeyboardFunc(myKeys);               // function to run when keys presses occur
-  glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
-    glutReshapeFunc(myReshape);       // function to run when the window gets resized
-    glutDisplayFunc(myDisplay);       // function to run when its time to draw something
-  glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
-    glutMouseFunc(onMouseButton);
-    loadTextures(); //load the texture
+    glutKeyboardFunc(myKeys);               // function to run when keys presses occur
+	glutSpecialFunc(mySpecial);             // function to run when special keys pressed 
+	glutReshapeFunc(myReshape);             // function to run when the window gets resized
+	glutDisplayFunc(myDisplay);             // function to run when its time to draw something
+	glutPassiveMotionFunc(myMouse);         // function to run when the mouse moves or is clicked
+	glutMouseFunc(onMouseButton);
+
+    loadTextures();    //load the texture
     glEnable(GL_TEXTURE_2D);
-	glEnable(GL_DEPTH_TEST); // enable z-buffer depth test
-	
-    glShadeModel(GL_SMOOTH);
 
-    glutMainLoop();             // infinite loop that will keep drawing and resizing
+	glEnable(GL_DEPTH_TEST); // enable z-buffer depth test	
+	glShadeModel(GL_SMOOTH);
 
-    return 0;
+	glutMainLoop();             // infinite loop that will keep drawing and resizing
+	return 0;
 }
