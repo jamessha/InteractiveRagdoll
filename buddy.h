@@ -76,8 +76,11 @@ class Buddy{
             // Init Limb Angles (to enforce joint angle constraints)
             this->l_elbow_angle = new SoftAngle(l_humerus2, l_humerus1, l_elbow_joint, l_ulna1, l_ulna2, 180);
             this->r_elbow_angle = new SoftAngle(r_humerus1, r_humerus2, r_elbow_joint, r_ulna2, r_ulna1, 180);
-            this->l_knee_angle  = new SoftAngle(l_femur1, l_femur2, l_knee_joint, l_tibia2, l_tibia1, 180);
-            this->r_knee_angle  = new SoftAngle(r_femur2, r_femur1, r_knee_joint, r_tibia1, r_tibia2, 180);
+            this->l_knee_angle  = new SoftAngle(l_femur2, l_femur1, l_knee_joint, l_tibia1, l_tibia2, 180);
+            this->r_knee_angle  = new SoftAngle(r_femur1, r_femur2, r_knee_joint, r_tibia2, r_tibia1, 180);
+
+	    this->l_leg_angle = new restrictedRotationAngle(l_femur2, l_femur1, l_knee_joint, l_tibia1, l_tibia2, l_pelvis, pelvis, spine_top);
+	    this->r_leg_angle = new restrictedRotationAngle(r_femur1, r_femur2, r_knee_joint, r_tibia2, r_tibia1, l_pelvis, pelvis, spine_top);
 
             // Init Cylinders (for rendering)
             this->head_part = new Cylinder(head, spine_top, 0.4);
@@ -163,6 +166,9 @@ class Buddy{
             this->joint_angles.push_back(r_elbow_angle);
             this->joint_angles.push_back(l_knee_angle);
             this->joint_angles.push_back(r_knee_angle);
+
+	    this->limb_angles.push_back(l_leg_angle);
+	    this->limb_angles.push_back(r_leg_angle);
            
             //Sphere* test_s1 = new Sphere(0, 0, 0, 0.1, 1);
             //Sphere* test_s2 = new Sphere(1, 0, 0, 0.1, 1);
@@ -245,6 +251,9 @@ class Buddy{
         SoftAngle* l_knee_angle;
         SoftAngle* r_knee_angle;
 
+	restrictedRotationAngle* l_leg_angle;
+	restrictedRotationAngle* r_leg_angle;
+
         Cylinder* head_part;
         Cylinder* body_part;
         Cylinder* l_humerus_part;
@@ -260,4 +269,5 @@ class Buddy{
         vector<Link*> limbs;
         vector<Cylinder*> body_parts;
         vector<Angle*> joint_angles;
+	vector<restrictedRotationAngle*> limb_angles;
 };
