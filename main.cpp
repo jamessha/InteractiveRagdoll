@@ -89,9 +89,7 @@ Eigen::Vector3d bullet_start_draw;
 Eigen::Vector3d bullet_end;
 Eigen::Vector3d bullet_dir;
 Eigen::Vector3d gun_head;
-Eigen::Vector3d gun_head_draw;
 Eigen::Vector3d gun_end;
-Eigen::Vector3d gun_dir;
 bool fire_primary = false;
 bool fire_secondary = false;
 string primary = "laser";
@@ -140,7 +138,7 @@ GLfloat shininess[] = {8.0};
 // sf::Sound switchsound;
 // sf::Sound grenadesound;
 
-GLuint text[] = {0,0,0,0,0, 0, 0};//, 0}; //for one texture. We are only going go to use one
+GLuint text[] = {0,0,0,0,0, 0, 0, 0,0}; //for one texture. We are only going go to use one
 
 //Taken from online, as older compilers do not include
 template <typename T>
@@ -185,7 +183,7 @@ void loadTextures(GLuint texture, const char* fname, int quality){
 
 
 void loadTextures(){
-  glGenTextures(7, text);
+  glGenTextures(9, text);
   loadTextures(text[0], "assets/brickwall2.png", 0);
   loadTextures(text[1], "assets/ceiling.png",    0);
   loadTextures(text[2], "assets/floor.png",      0);
@@ -194,7 +192,7 @@ void loadTextures(){
   loadTextures(text[5], "assets/chest.png", 1);
   loadTextures(text[6], "assets/gun_laser.png",  0);
   loadTextures(text[7], "assets/gun_rocket.png", 0);
-//loadTextures(text[8], "assets/gun_gravity.png", 1);
+  loadTextures(text[8], "assets/gun_gravity.png", 0);
 }
 
 void initializeBuddy() {
@@ -606,7 +604,7 @@ void drawBoxTextures(){
 
 
 void drawGun() {
-	gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
+	/*gun_head_draw << cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y),
 		             cam_pos_y - cos(cam_rot_x),
 		             cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y);
     gun_head << cam_pos_x, cam_pos_y, cam_pos_z;
@@ -614,7 +612,7 @@ void drawGun() {
 		        sin(cam_rot_x),
 		        cos(cam_rot_y)*cos(cam_rot_x);
     gun_dir.normalize();
- 	gun_end = gun_head + 1.5*gun_dir;
+ 	gun_end = gun_head + 1.5*gun_dir;*/
 
 	/*	GLUquadricObj *gun = gluNewQuadric();
 	glBindTexture(GL_TEXTURE_2D, gun_texture[0]);
@@ -631,23 +629,40 @@ void drawGunTextures() {
 		glBindTexture(GL_TEXTURE_2D, text[6]);
 	} else if (primary == "rockets") {
 		glBindTexture(GL_TEXTURE_2D, text[7]);
-		/*} else if (primary == "grav") {
-		  glBindTexture(GL_TEXTURE_2D, [8]);*/
+	} else if (primary == "grav") {
+		glBindTexture(GL_TEXTURE_2D, text[8]);
 	}
 	//glDisable(GL_TEXTURE_GEN_S);
 	//glDisable(GL_TEXTURE_GEN_T);
 
 	//glFrontFace(GL_CW);
+	Eigen::Vector3d base(0, 1, 0);
+	Eigen::Vector3d head(1, 0, 0);
+	Eigen::Vector3d rad_u = bullet_dir.cross(bullet_dir + base);
+	Eigen::Vector3d rad_v = bullet_dir.cross(rad_u);
+	rad_u.normalize();
+	rad_v.normalize();
+	
 	glBegin(GL_QUAD_STRIP);
-	int sides = 360, radius = 1.1, len = 6;
+	double radius = 0.5;
+	int sides = 360, len = 2.5;
 	for (int i = 0; i <= sides; i++) {
 		double u = i / (double) sides;
-		glTexCoord2d(0, u);   glVertex3d(cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u) ,
-										 cam_pos_y - cos(cam_rot_x),
-										 cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y) + radius*sin(2*PI*u));
-		glTexCoord2d(1, u);   glVertex3d(cam_pos_x + len*cos(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u),
-										 cam_pos_y + len*sin(cam_rot_x),
-										 cam_pos_z + len*cos(cam_rot_y)*cos(cam_rot_x) + radius*sin(2*PI*u));
+		gun_head = bullet_start_draw + rad_u;
+		base = bullet_start_draw - 0.5*bullet_dir + radius*(cos(u*2*PI)*rad_u + sin(u*2*PI)*rad_v);
+		head = bullet_start      + len*bullet_dir + radius*(cos(u*2*PI)*rad_u + sin(u*2*PI)*rad_v);
+		glTexCoord2d(1, u);   
+		glVertex3d(base(0), base(1)-1, base(2));
+		glTexCoord2d(0, u);   
+		glVertex3d(head(0), head(1)-1, head(2));
+		/*glTexCoord2d(0, u);   
+		glVertex3d(cam_pos_x + sin(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u) ,
+				   cam_pos_y - cos(cam_rot_x),
+				   cam_pos_z + sin(cam_rot_x)*cos(cam_rot_y) + radius*sin(2*PI*u));
+		glTexCoord2d(1, u);   
+		glVertex3d(cam_pos_x + len*cos(cam_rot_x)*sin(cam_rot_y) + radius*cos(2*PI*u),
+				   cam_pos_y + len*sin(cam_rot_x),
+				   cam_pos_z + len*cos(cam_rot_y)*cos(cam_rot_x) + radius*sin(2*PI*u));*/
 	}
 	glEnd();
 	//glPopMatrix();
@@ -696,7 +711,7 @@ void drawRay(Eigen::Vector3d& start, Eigen::Vector3d& end){
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
-    renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
+	renderCylinder_convenient(start(0), start(1), start(2), end(0), end(1), end(2), 0.1, 20);
 }
 
 void drawHUD(){
@@ -1028,7 +1043,6 @@ void myDisplay() {
             fireGrav();
         fire_primary = false;
     }
-
     if (fire_secondary){
         if (secondary == "grenade")
             fireGrenade();
