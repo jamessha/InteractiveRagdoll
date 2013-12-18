@@ -552,6 +552,7 @@ class SoftAngle : public Angle {
 
         void constraints() {
             //Variables for max angle position
+	  //cout << "in angle constraints" << endl;
 	  Eigen::Vector3d hingeCenter = (s2->curPos - s3->curPos)/2 + s3->curPos;
             Eigen::Vector3d s2s3 = (s2->curPos - s3->curPos).normalized();
             Eigen::Vector3d v1 = s4->curPos - hingeCenter;
@@ -562,13 +563,14 @@ class SoftAngle : public Angle {
  
             double orientation = up.dot(v1);
 
-            double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
+            double angle = acos(v1.normalized().dot(v2.normalized())/(v1.normalized().norm() * v2.normalized().norm())) * 180/3.1415926535;
  
             if ( orientation < 0 ) {
                 angle = 360-angle;
             }
 	    //cout << "angle " << angle << endl;
             if ((angle > const_angle || angle < 20) && (v1.normalized() != v2.normalized())) {
+	      //cout << "angle invalid" << endl;
 	      //find the angle between s1-hingeCenter and s1-s4
 	      Eigen::Vector3d s1s4 = (s4->curPos - s1->curPos);
 	      Eigen::Vector3d s1hc = (hingeCenter - s1->curPos);
@@ -576,7 +578,7 @@ class SoftAngle : public Angle {
 	      double rotate_amount = -another_angle;
 	      //cout << rotate_amount << endl;
 	      Eigen::Matrix3d firstrotation;
-	      firstrotation = AngleAxisd(-rotate_amount/3, s2s3);
+	      firstrotation = AngleAxisd(-rotate_amount/15, s2s3);
 	      Eigen::Vector3d newPosS4 = firstrotation * (s4->curPos - s1->curPos);
 	      Eigen::Vector3d newPosS2 = firstrotation * (s2->curPos - s1->curPos);
 	      Eigen::Vector3d newPosS3 = firstrotation * (s3->curPos - s1->curPos);
@@ -599,10 +601,10 @@ class SoftAngle : public Angle {
                 }
  
                 Eigen::Matrix3d rotation1;
-                rotation1 = AngleAxisd((rotation_amount/2) * 3.1415926535/180, s2s3);
+                rotation1 = AngleAxisd((rotation_amount/10) * 3.1415926535/180, s2s3);
 
                 Eigen::Matrix3d rotation2;
-                rotation2 = AngleAxisd((-rotation_amount/2) * 3.1415926535/180, s2s3);
+                rotation2 = AngleAxisd((-rotation_amount/10) * 3.1415926535/180, s2s3);
 
 		newPosS4 = newPosS4 + s1->curPos;
 		newPosS2 = newPosS2 + s1->curPos;
@@ -631,15 +633,26 @@ class SoftAngle : public Angle {
 		s3->curPos = newPosS3;
 		s4->curPos = newPosS4;
 
+		Eigen::Vector3d diff1 = s1->oldPos - newPosS1;
+		Eigen::Vector3d diff2 = s2->oldPos - newPosS2;
+		Eigen::Vector3d diff3 = s3->oldPos - newPosS3;
+		Eigen::Vector3d diff4 = s4->oldPos - newPosS4;
+		
+
 		//s1->oldPos = newPosS1 + 0.9*(s1->oldPos - newPosS1 + nanbias);
 		//s2->oldPos = newPosS2 + 0.9*(s2->oldPos - newPosS2 + nanbias);
 		//s3->oldPos = newPosS3 + 0.9*(s3->oldPos - newPosS3 + nanbias);
 		//s4->oldPos = newPosS4 + 0.9*(s4->oldPos - newPosS4 + nanbias);
 
-		//s1->oldPos = newPosS1 +  (oldPosS1 - newPosS1 + nanbias);
-		//s2->oldPos = newPosS2+  (oldPosS2 - newPosS2 + nanbias);
-		//s3->oldPos = newPosS3+  (oldPosS3 - newPosS3 + nanbias);
-		//s4->oldPos = newPosS4 + (oldPosS4 - newPosS4 + nanbias);
+		//Eigen::Vector3d diff1 = oldPosS1 - newPosS1;
+		//Eigen::Vector3d diff2 = oldPosS2 - newPosS2;
+		//Eigen::Vector3d diff3 = oldPosS3 - newPosS3;
+		//Eigen::Vector3d diff4 = oldPosS4 - newPosS4;
+
+		//s1->oldPos = newPosS1  + Eigen::Vector3d(0.1*diff1(0), diff1(1), 0.1*diff1(2));
+		//s2->oldPos = newPosS2  + Eigen::Vector3d(0.1*diff2(0), diff2(1), 0.1*diff2(2));
+		//s3->oldPos = newPosS3  + Eigen::Vector3d(0.1*diff3(0), diff3(1), 0.1*diff3(2));
+		//s4->oldPos = newPosS4  + Eigen::Vector3d(0.1*diff4(0), diff4(1), 0.1*diff4(2));
 		//cout << "final magnitude " << (s4->curPos - hingeCenter).norm() << endl;
 		//cout << "" << endl;
 		//s1->oldPos = (s1->curPos) + 0.1 * (oldPosS1 - newPosS1);
@@ -749,11 +762,11 @@ class restrictedRotationAngle {
         Rotate right hand rule around vector (s2-s3).
     */
 public:
-    Sphere *l_pelvis, *pelvis, *spine_top, 
+  Sphere *l_pelvis, *pelvis, *spine_top, *stomach, 
         *s1, *s2, *s3, *s4;
     restrictedRotationAngle() {}
 
-    restrictedRotationAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+  restrictedRotationAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top, Sphere *stomach) {
         //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
         //into the above diagram.
         if (l1->s1 == l2->s1) {
@@ -786,9 +799,10 @@ public:
         this->l_pelvis = l_pelvis;
         this->pelvis = pelvis;
         this->spine_top = spine_top;
+	this->stomach = stomach;
     }
 
-    restrictedRotationAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+  restrictedRotationAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top, Sphere *stomach) {
         s1 = ss1;
         s2 = ss2;
         s3 = ss3;
@@ -796,28 +810,40 @@ public:
         this->l_pelvis = l_pelvis;
         this->pelvis = pelvis;
         this->spine_top = spine_top;
+	this->stomach = stomach;
     }
 
     void constraints() {
         //Calculate the front vector
-        Eigen::Vector3d front = (l_pelvis->curPos - pelvis->curPos).cross(spine_top->curPos - pelvis->curPos).normalized();
+      //cout << "in other constraints" << endl;
+        Eigen::Vector3d front = -(l_pelvis->curPos - pelvis->curPos).cross(spine_top->curPos - pelvis->curPos).normalized();
 
         //Calculate the orientation of the knee
         Eigen::Vector3d hingeCenter = (s2->curPos - s3->curPos)/2 + s3->curPos;
         Eigen::Vector3d knee_orientation = (s3->curPos - hingeCenter).cross(s1->curPos - hingeCenter);
 
+	//Calculate other orientation
+	Eigen::Vector3d otherfront = -(stomach->curPos - pelvis->curPos).cross(l_pelvis->curPos - pelvis->curPos);
+	//cout << otherfront.transpose() << endl;
+
+	double otherangle = acos(otherfront.normalized().dot((hingeCenter-s1->curPos).normalized())/(otherfront.normalized().norm() * (hingeCenter-s1->curPos).normalized().norm()));
+
         //See if valid rotation angle, if it just return
-        if (front.dot(knee_orientation) >= 0) {
+        if (front.dot(knee_orientation) >= 0 || otherangle < 3.1415926535/2) {
+	  //cout << front.transpose() << endl;
+	  //cout << knee_orientation.transpose() << endl;
+	  //cout << "valid" << endl;
             return;
         }
 
         //calculate the angle between the knee_orientation and the front vector, to determine how much to rotate
-        double angle = acos(front.dot(knee_orientation)/(front.norm() * knee_orientation.norm()));
-
+        double angle = acos(front.normalized().dot(knee_orientation.normalized())/(front.normalized().norm() * knee_orientation.normalized().norm()));
+	//cout << "angle" <<  angle << endl;
         //how much we want to actually rotate
-        double rotation_amount = angle - 3.1415926535/2;
+        double rotation_amount = angle - 3.1415926535;
+	//cout << "rotation amount " << rotation_amount << endl;
         Eigen::Matrix3d rotation;
-        rotation = AngleAxisd(rotation_amount,s1->curPos - hingeCenter);
+        rotation = AngleAxisd(rotation_amount/15, (s1->curPos - hingeCenter).normalized());
 
         Eigen::Vector3d newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
         Eigen::Vector3d newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;
@@ -833,30 +859,50 @@ public:
         Eigen::Vector3d adj_hingeCenter = (newPosS2 - newPosS3)/2 + newPosS3;
         Eigen::Vector3d adj_knee_orientation = (newPosS3 - adj_hingeCenter).cross(newPosS1 - adj_hingeCenter);
 
-        if (front.dot(adj_knee_orientation) >= -1e-3) {
-            s1->curPos = newPosS1; s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
-            s2->curPos = newPosS2; s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
-            s3->curPos = newPosS3; s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
-            s4->curPos = newPosS4; s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+        if (front.dot(adj_knee_orientation) >= 0) {
+	  Eigen::Vector3d diff1 = oldPosS1 - newPosS1;
+	  Eigen::Vector3d diff2 = oldPosS2 - newPosS2;
+	  Eigen::Vector3d diff3 = oldPosS3 - newPosS3;
+	  Eigen::Vector3d diff4 = oldPosS4 - newPosS4;
+
+	  s1->curPos = newPosS1; //s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
+	  s2->curPos = newPosS2; //s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
+	  s3->curPos = newPosS3; //s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
+	  s4->curPos = newPosS4; //s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+
+	  s1->oldPos = s1->curPos + Eigen::Vector3d(0.0*diff1(0), diff1(1), 0.0*diff1(2));
+	  s2->oldPos = s2->curPos + Eigen::Vector3d(0.0*diff2(0), diff2(1), 0.0*diff2(2));
+	  s3->oldPos = s3->curPos + Eigen::Vector3d(0.0*diff3(0), diff3(1), 0.0*diff3(2));
+	  s4->oldPos = s4->curPos + Eigen::Vector3d(0.0*diff4(0), diff4(1), 0.0*diff4(2));
             return;
         }
 
-        rotation = AngleAxisd(rotation_amount, hingeCenter - s1->curPos);
+        rotation = AngleAxisd(rotation_amount/15, (hingeCenter - s1->curPos).normalized());
 
         newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
         newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;
         newPosS2 = rotation * (s2->curPos - s1->curPos) + s1->curPos;
-        newPosS1 = s1->curPos;
+        newPosS1 = rotation * (s1->curPos - s1->curPos) + s1->curPos;
 
         oldPosS4 = rotation * (s4->oldPos - s1->curPos) + s1->curPos;
         oldPosS3 = rotation * (s3->oldPos - s1->curPos) + s1->curPos;
         oldPosS2 = rotation * (s2->oldPos - s1->curPos) + s1->curPos;
         oldPosS1 = rotation * (s1->oldPos - s1->curPos) + s1->curPos;
 
-        s1->curPos = newPosS1; s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
-        s2->curPos = newPosS2; s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
-        s3->curPos = newPosS3; s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
-        s4->curPos = newPosS4; s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+	  Eigen::Vector3d diff1 = oldPosS1 - newPosS1;
+	  Eigen::Vector3d diff2 = oldPosS2 - newPosS2;
+	  Eigen::Vector3d diff3 = oldPosS3 - newPosS3;
+	  Eigen::Vector3d diff4 = oldPosS4 - newPosS4;
+
+        s1->curPos = newPosS1; //s1->oldPos = newPosS1 + 0.1 * (oldPosS1 - newPosS1);
+        s2->curPos = newPosS2; //s2->oldPos = newPosS2 + 0.1 * (oldPosS2 - newPosS2);
+        s3->curPos = newPosS3; //s3->oldPos = newPosS1 + 0.1 * (oldPosS3 - newPosS3);
+        s4->curPos = newPosS4; //s4->oldPos = newPosS4 + 0.1 * (oldPosS4 - newPosS4);
+
+	  s1->oldPos = s1->curPos + Eigen::Vector3d(0.0*diff1(0), diff1(1), 0.0*diff1(2));
+	  s2->oldPos = s2->curPos + Eigen::Vector3d(0.0*diff2(0), diff2(1), 0.0*diff2(2));
+	  s3->oldPos = s3->curPos + Eigen::Vector3d(0.0*diff3(0), diff3(1), 0.0*diff3(2));
+	  s4->oldPos = s4->curPos + Eigen::Vector3d(0.0*diff4(0), diff4(1), 0.0*diff4(2));
 
         return;
     }
@@ -873,14 +919,13 @@ class ParticleSystem {
         vector <Cylinder*> CC;
         double dtimestep;
         vector <Angle*> AA;
+  vector <restrictedRotationAngle*> RR;
         vector <Grenade*> grenades;
         vector <Grenade*> explosions;
         vector <Rocket*> rockets;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
         Eigen::Vector3d world_acc;
-        //ISoundEngine* soundengine;
-        //vector <ISound*> sounds;
 
         ParticleSystem(double box_corner_x, double box_corner_y, double box_corner_z,
                        double box_dims_x, double box_dims_y, double box_dims_z,
@@ -896,9 +941,9 @@ class ParticleSystem {
         } 
 
         void zeroParticleAcc();
-        void TimeStep(bool use_angle_constraints);
+  void TimeStep(bool use_angle_constraints, bool use_other_angle_constraints);
         void Verlet();
-        void SatisfyConstraints(bool use_angle_constraints);
+  void SatisfyConstraints(bool use_angle_constraints, bool use_other_angle_constraints);
         void GetBox(vector<Eigen::Vector3d>& vertices);
         void FireRay(Eigen::Vector3d& start, Eigen::Vector3d& dir, double mag);
         void CreateExplosion(Explosive* exploder);
@@ -913,22 +958,6 @@ void ParticleSystem::zeroParticleAcc(){
 } 
 
 void ParticleSystem::Verlet () {
-    /*
-    for (int i = 0; i < num_particles; i++) {
-        Particle part = particles[i];
-        Eigen::Eigen::VectorXd curPos = part.curPos;
-        Eigen::Eigen::VectorXd temp = curPos;
-        Eigen::Eigen::VectorXd oldPos = part.oldPos;
-        Eigen::Eigen::VectorXd acc = part.acc;
-        part.curPos = 2 * curPos - oldPos + acc * dtimestep * dtimestep;
-        // cout << "TEST" << endl;
-        // cout << oldPos << endl;
-        // cout << temp << endl;
-        // cout << part.curPos << endl;
-        // cout << "endTest" << endl;
-        part.oldPos = temp;
-        particles[i] = part;
-    } */
 
     vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
@@ -983,13 +1012,6 @@ void ParticleSystem::ComputeExplosions(){
         else
             explosions[i]->fuse -= 1;
     }
-
-    // Erase old sounds(been played)
-    //for (int i = 0; i < sounds.size(); i++) {
-    //    if (sounds[i]->isFinished()) {
-    //        sounds.erase(sounds.begin() + i);
-    //    }
-    //}
     
     // Compute explosions for grenades
     for (int i = 0; i < grenades.size(); i++) {
@@ -1010,22 +1032,16 @@ void ParticleSystem::ComputeExplosions(){
     } 
 } 
 
-void ParticleSystem::TimeStep(bool use_angle_constraints) {
+void ParticleSystem::TimeStep(bool use_angle_constraints, bool use_other_angle_constraints) {
     //Check for explosions first and set explosions
     ComputeExplosions(); 
     Verlet();
     for (int i = 0; i < 10; i++){
-        SatisfyConstraints(use_angle_constraints);
+      SatisfyConstraints(use_angle_constraints, use_other_angle_constraints);
     }
 }
 
-void ParticleSystem::SatisfyConstraints(bool use_angle_constraints) {
-    /*
-    for (int i = 0; i < num_particles; i++) {
-        Particle part = particles[i];
-        part.constraints(Eigen::Vector3d(0,0,0), Eigen::Vector3d(10,10,10), particles);
-        particles[i] = part;
-    } */
+void ParticleSystem::SatisfyConstraints(bool use_angle_constraints, bool use_other_angle_constraints) {
 
     vector<Sphere*>::iterator si;
     for (si = SS.begin(); si != SS.end(); ++si) {
@@ -1084,11 +1100,15 @@ void ParticleSystem::SatisfyConstraints(bool use_angle_constraints) {
             ext_dist = fmax(ext_dist, Grav[j]->constraints());
         }
     }
-    
     if (use_angle_constraints){
         for (std::vector<Angle*>::iterator ai = AA.begin(); ai != AA.end(); ++ai) {
            (*ai)->constraints();
         }
+    }
+    if (use_other_angle_constraints) {
+      for(int i = 0; i < RR.size(); i++) {
+	RR[i]->constraints();
+      }
     }
 }
 

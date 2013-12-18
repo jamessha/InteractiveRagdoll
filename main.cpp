@@ -54,6 +54,7 @@ void junk(){
 #define T_KEY 116
 #define F_KEY 102
 #define C_KEY 99
+#define V_KEY 118
 #define N_KEY 110
 #define R_KEY 114
 #define SPACEBAR 32
@@ -99,6 +100,7 @@ bool texture = true;
 bool wireframe = false;
 bool touching_ground = false;
 bool use_angle_constraints = false;
+bool use_other_angle_constraints = false;
 int time_since_last_drop = 0;
 int time_since_ground = 0;
 int best_time = 0;
@@ -201,6 +203,7 @@ void initializeBuddy() {
     ps.LL = buddy->limbs;
     ps.CC = buddy->body_parts;
     ps.AA = buddy->joint_angles;
+    ps.RR = buddy->limb_angles;
     buddies.push_back(buddy);
 }
 
@@ -359,6 +362,12 @@ void myKeys(unsigned char key, int x, int y) {
         else
             use_angle_constraints = true;
         break;
+    case V_KEY:
+      if (use_other_angle_constraints)
+	use_other_angle_constraints = false;
+      else
+	use_other_angle_constraints = true;
+      break;
     case N_KEY:
         // Add buddy
         if (time_since_last_drop > 60){
@@ -1079,7 +1088,7 @@ void myDisplay() {
     //    closest_buddy->joints[0]->curPos = ctrl_pt + 3*bullet_dir;
     //} 
 
-    ps.TimeStep(use_angle_constraints);
+    ps.TimeStep(use_angle_constraints, use_other_angle_constraints);
     
        
     time_since_last_drop += 1;
