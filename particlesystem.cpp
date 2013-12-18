@@ -563,7 +563,7 @@ class SoftAngle : public Angle {
  
             double orientation = up.dot(v1);
 
-            double angle = acos(v1.dot(v2)/(v1.norm() * v2.norm())) * 180/3.1415926535;
+            double angle = acos(v1.normalized().dot(v2.normalized())/(v1.normalized().norm() * v2.normalized().norm())) * 180/3.1415926535;
  
             if ( orientation < 0 ) {
                 angle = 360-angle;
@@ -649,10 +649,10 @@ class SoftAngle : public Angle {
 		//Eigen::Vector3d diff3 = oldPosS3 - newPosS3;
 		//Eigen::Vector3d diff4 = oldPosS4 - newPosS4;
 
-		s1->oldPos = newPosS1  + Eigen::Vector3d(0.1*diff1(0), diff1(1), 0.1*diff1(2));
-		s2->oldPos = newPosS2  + Eigen::Vector3d(0.1*diff2(0), diff2(1), 0.1*diff2(2));
-		s3->oldPos = newPosS3  + Eigen::Vector3d(0.1*diff3(0), diff3(1), 0.1*diff3(2));
-		s4->oldPos = newPosS4  + Eigen::Vector3d(0.1*diff4(0), diff4(1), 0.1*diff4(2));
+		//s1->oldPos = newPosS1  + Eigen::Vector3d(0.1*diff1(0), diff1(1), 0.1*diff1(2));
+		//s2->oldPos = newPosS2  + Eigen::Vector3d(0.1*diff2(0), diff2(1), 0.1*diff2(2));
+		//s3->oldPos = newPosS3  + Eigen::Vector3d(0.1*diff3(0), diff3(1), 0.1*diff3(2));
+		//s4->oldPos = newPosS4  + Eigen::Vector3d(0.1*diff4(0), diff4(1), 0.1*diff4(2));
 		//cout << "final magnitude " << (s4->curPos - hingeCenter).norm() << endl;
 		//cout << "" << endl;
 		//s1->oldPos = (s1->curPos) + 0.1 * (oldPosS1 - newPosS1);
@@ -762,11 +762,11 @@ class restrictedRotationAngle {
         Rotate right hand rule around vector (s2-s3).
     */
 public:
-    Sphere *l_pelvis, *pelvis, *spine_top, 
+  Sphere *l_pelvis, *pelvis, *spine_top, *stomach, 
         *s1, *s2, *s3, *s4;
     restrictedRotationAngle() {}
 
-    restrictedRotationAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+  restrictedRotationAngle(Link *l1, Link *l2, Link *l3, Link *l4, Link *l5, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top, Sphere *stomach) {
         //Links in hinge may have been constructed weirdly, thus parse the spheres that make up the hinge
         //into the above diagram.
         if (l1->s1 == l2->s1) {
@@ -799,9 +799,10 @@ public:
         this->l_pelvis = l_pelvis;
         this->pelvis = pelvis;
         this->spine_top = spine_top;
+	this->stomach = stomach;
     }
 
-    restrictedRotationAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top) {
+  restrictedRotationAngle(Sphere *ss1, Sphere *ss2, Sphere *ss3, Sphere *ss4, Sphere *l_pelvis, Sphere *pelvis, Sphere *spine_top, Sphere *stomach) {
         s1 = ss1;
         s2 = ss2;
         s3 = ss3;
@@ -809,19 +810,26 @@ public:
         this->l_pelvis = l_pelvis;
         this->pelvis = pelvis;
         this->spine_top = spine_top;
+	this->stomach = stomach;
     }
 
     void constraints() {
         //Calculate the front vector
       //cout << "in other constraints" << endl;
-        Eigen::Vector3d front = (l_pelvis->curPos - pelvis->curPos).cross(spine_top->curPos - pelvis->curPos).normalized();
+        Eigen::Vector3d front = -(l_pelvis->curPos - pelvis->curPos).cross(spine_top->curPos - pelvis->curPos).normalized();
 
         //Calculate the orientation of the knee
         Eigen::Vector3d hingeCenter = (s2->curPos - s3->curPos)/2 + s3->curPos;
         Eigen::Vector3d knee_orientation = (s3->curPos - hingeCenter).cross(s1->curPos - hingeCenter);
 
+	//Calculate other orientation
+	Eigen::Vector3d otherfront = -(stomach->curPos - pelvis->curPos).cross(l_pelvis->curPos - pelvis->curPos);
+	//cout << otherfront.transpose() << endl;
+
+	double otherangle = acos(otherfront.normalized().dot((hingeCenter-s1->curPos).normalized())/(otherfront.normalized().norm() * (hingeCenter-s1->curPos).normalized().norm()));
+
         //See if valid rotation angle, if it just return
-        if (front.dot(knee_orientation) >= 0) {
+        if (front.dot(knee_orientation) >= 0 || otherangle < 3.1415926535/2) {
 	  //cout << front.transpose() << endl;
 	  //cout << knee_orientation.transpose() << endl;
 	  //cout << "valid" << endl;
@@ -829,13 +837,13 @@ public:
         }
 
         //calculate the angle between the knee_orientation and the front vector, to determine how much to rotate
-        double angle = acos(front.dot(knee_orientation)/(front.norm() * knee_orientation.norm()));
+        double angle = acos(front.normalized().dot(knee_orientation.normalized())/(front.normalized().norm() * knee_orientation.normalized().norm()));
 	//cout << "angle" <<  angle << endl;
         //how much we want to actually rotate
         double rotation_amount = angle - 3.1415926535;
 	//cout << "rotation amount " << rotation_amount << endl;
         Eigen::Matrix3d rotation;
-        rotation = AngleAxisd(rotation_amount/10, (s1->curPos - hingeCenter).normalized());
+        rotation = AngleAxisd(rotation_amount/15, (s1->curPos - hingeCenter).normalized());
 
         Eigen::Vector3d newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
         Eigen::Vector3d newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;
@@ -869,7 +877,7 @@ public:
             return;
         }
 
-        rotation = AngleAxisd(rotation_amount/10, (hingeCenter - s1->curPos).normalized());
+        rotation = AngleAxisd(rotation_amount/15, (hingeCenter - s1->curPos).normalized());
 
         newPosS4 = rotation * (s4->curPos - s1->curPos) + s1->curPos;
         newPosS3 = rotation * (s3->curPos - s1->curPos) + s1->curPos;

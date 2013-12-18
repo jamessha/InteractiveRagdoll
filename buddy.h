@@ -18,6 +18,7 @@ class Buddy{
 
 	        this->l_pelvis = new Sphere(-0.35, 2.5, 0.0, 0.0, 0.33);
 	        this->r_pelvis = new Sphere (0.35, 2.5, 0.0, 0.0, 0.33);
+		this->stomach = new Sphere (0.0, 2.2, 0.0, 0.0, 0.1);
 
             this->l_shoulder = new Sphere(-1.25, 4.2, 0.0, 0.0, 1.0);
             this->r_shoulder = new Sphere(1.25, 4.2, 0.0, 0.0, 1.0);
@@ -67,6 +68,8 @@ class Buddy{
             this->l_tibia2 = new HardLink(l_knee2, l_ankle);
             this->r_tibia1 = new HardLink(r_knee1, r_ankle);
             this->r_tibia2 = new HardLink(r_knee2, r_ankle);
+	    this->random1 = new HardLink(stomach, pelvis);
+	    this->random2 = new HardLink(stomach, spine_top);
 
             this->l_elbow_joint = new HardLink(l_elbow1, l_elbow2);
             this->r_elbow_joint = new HardLink(r_elbow1, r_elbow2);
@@ -79,8 +82,8 @@ class Buddy{
             this->l_knee_angle  = new SoftAngle(l_femur2, l_femur1, l_knee_joint, l_tibia1, l_tibia2, 180);
             this->r_knee_angle  = new SoftAngle(r_femur1, r_femur2, r_knee_joint, r_tibia2, r_tibia1, 180);
 
-	    this->l_leg_angle = new restrictedRotationAngle(l_femur2, l_femur1, l_knee_joint, l_tibia1, l_tibia2, l_pelvis, pelvis, spine_top);
-	    this->r_leg_angle = new restrictedRotationAngle(r_femur1, r_femur2, r_knee_joint, r_tibia2, r_tibia1, l_pelvis, pelvis, spine_top);
+	    this->l_leg_angle = new restrictedRotationAngle(l_femur2, l_femur1, l_knee_joint, l_tibia1, l_tibia2, l_pelvis, pelvis, spine_top, stomach);
+	    this->r_leg_angle = new restrictedRotationAngle(r_femur1, r_femur2, r_knee_joint, r_tibia2, r_tibia1, l_pelvis, pelvis, spine_top, stomach);
 
             // Init Cylinders (for rendering)
             this->head_part = new Cylinder(head, spine_top, 0.4);
@@ -113,6 +116,7 @@ class Buddy{
             this->joints.push_back(r_knee2);
             this->joints.push_back(l_ankle);
             this->joints.push_back(r_ankle);
+	    this->joints.push_back(stomach);
 
             this->limbs.push_back(r_back);
             this->limbs.push_back(l_back);
@@ -150,6 +154,8 @@ class Buddy{
             this->limbs.push_back(r_knee_joint);
             this->limbs.push_back(l_elbow_joint);
             this->limbs.push_back(r_elbow_joint);
+	    this->limbs.push_back(random1);
+	    this->limbs.push_back(random2);
 
             this->body_parts.push_back(head_part);
             this->body_parts.push_back(body_part);
@@ -209,6 +215,7 @@ class Buddy{
         Sphere* r_knee2;
 		Sphere* l_ankle;
 		Sphere* r_ankle;
+		Sphere* stomach;
 
 		HardLink* l_back;
 		HardLink* r_back;
@@ -245,6 +252,9 @@ class Buddy{
         HardLink* r_elbow_joint;
         HardLink* l_knee_joint;
         HardLink* r_knee_joint;
+
+	HardLink* random1;
+	HardLink* random2;
 
         SoftAngle* l_elbow_angle;
         SoftAngle* r_elbow_angle;
