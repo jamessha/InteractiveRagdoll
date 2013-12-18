@@ -849,9 +849,8 @@ void fireLaser(){
 void fireRocket(){
     //soundengine->play2D("irrKlang-1.4.0/media/bell.wav");
     // rocketsound.play();
-    Eigen::Vector3d curPos(cam_pos_x, cam_pos_y, cam_pos_z);
-    Eigen::Vector3d oldPos = curPos - bullet_dir;
-    Rocket* explosive = new Rocket(curPos(0), curPos(1), curPos(2),
+    Eigen::Vector3d oldPos = bullet_start_draw - bullet_dir;
+    Rocket* explosive = new Rocket(bullet_start_draw(0), bullet_start_draw(1), bullet_start_draw(2),
                                    0.1, 0.5, 90000);
     explosive->oldPos = oldPos;
     ps.rockets.push_back(explosive);
@@ -870,6 +869,13 @@ void fireGrenade(){
 
 void fireGrav(){
     if (ps.Grav.size() == 3){
+        Eigen::Vector3d color(0, 0, 1);
+        double pos_x = cam_pos_x + 9*bullet_dir(0);
+        double pos_y = cam_pos_y + 9*bullet_dir(1);
+        double pos_z = cam_pos_z + 9*bullet_dir(2);
+        Flare* flare = new Flare(pos_x, pos_y, pos_z, 1.0, 1.0, 2, 0, color);
+        ps.explosions.push_back(flare);
+
         closest_buddy_dist = 99999999999;
         for (int i = 0; i < buddies.size(); i++){
             Eigen::Vector3d ctrl_pt = bullet_start + 5*bullet_dir;
@@ -902,11 +908,10 @@ void fireGrav(){
 
 // function that does the actual drawing of stuff
 void myDisplay() {
-  //lasersound.play();
+    //lasersound.play();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear screen and depth
     glClearColor(0.7f, 0.9f, 1.0f, 1.0f);
     glLoadIdentity();                              // reset transformations
-    glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -925,14 +930,14 @@ void myDisplay() {
     //soundengine->setListenerPosition(vec3df(cam_pos_x, cam_pos_y, cam_pos_z), vec3df(cam_pos_x, cam_pos_y, cam_pos_z + 0.001)
     //  ,vec3df(0,0,0), vec3df(0,1,0));
 
-  glEnable(GL_DEPTH_TEST);
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightfv(GL_LIGHT0, GL_DIFFUSE,  white);
     glLightfv(GL_LIGHT0, GL_AMBIENT,  white);
-  glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, white);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, white);
@@ -951,9 +956,11 @@ void myDisplay() {
     //glClear(GL_COLOR_BUFFER_BIT); //remove the ambient and light effects.
     //add the textures to the box
     if (texture) {
+        glEnable(GL_TEXTURE_2D);
         drawBoxTextures();
 		drawGunTextures();
 	}
+    glDisable(GL_TEXTURE_2D);
 
     //ps.setAcc(gravAcc(0), gravAcc(1), gravAcc(2)); 
     //if (DEBUG) drawAcc();  //draws the direction of where the gravity is pointing to. This value changes as the box moves around 
@@ -1025,7 +1032,9 @@ void myDisplay() {
 
     // Render all explosions
     for (int i = 0; i < ps.explosions.size(); i++){
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, red);
+        Flare* f = ps.explosions[i];
+        GLfloat color[] = {f->color(0), f->color(1), f->color(2)};
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, black);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, black);
 

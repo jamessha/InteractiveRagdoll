@@ -238,6 +238,27 @@ class Grenade : public Explosive {
         }
 };
 
+// Time based explosive
+class Flare : public Explosive {
+    public:
+        double fuse;
+        Eigen::Vector3d color;
+
+        Flare(double curx, double cury, double curz,
+                double radius, double mass, double fuse,
+                double force, Eigen::Vector3d& color){
+            this->oldPos << curx, cury, curz;
+            this->curPos << curx, cury, curz;
+            this->radius = radius;
+            this->mass = mass;
+            this->fuse = fuse;
+            this->color = color;
+            this->acc << 0, 0, 0;
+            this->force = force;
+        }
+};
+
+
 // Collision based explosive
 class Rocket : public Explosive {
     public:
@@ -919,9 +940,9 @@ class ParticleSystem {
         vector <Cylinder*> CC;
         double dtimestep;
         vector <Angle*> AA;
-  vector <restrictedRotationAngle*> RR;
+        vector <restrictedRotationAngle*> RR;
         vector <Grenade*> grenades;
-        vector <Grenade*> explosions;
+        vector <Flare*> explosions;
         vector <Rocket*> rockets;
         Eigen::Vector3d box_corner;
         Eigen::Vector3d box_dims;
@@ -980,7 +1001,8 @@ void ApplyExplosiveForce(Explosive* exploder, Sphere* explodee){
 }
 
 void ParticleSystem::CreateExplosion(Explosive* exploder){
-    Grenade* explosion = new Grenade(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2), 1.0, 1.0, 2, 0);
+    Eigen::Vector3d color(1, 0, 0);
+    Flare* explosion = new Flare(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2), 1.0, 1.0, 2, 0, color);
      //irrklang::vec3df position(exploder->curPos(0), exploder->curPos(1), exploder->curPos(2));
 
     // start the sound paused:
