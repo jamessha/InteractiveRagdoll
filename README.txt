@@ -1,4 +1,4 @@
-An interactive buddy for you to love and/or abuse
+An interactive ragdoll for you to love and/or abuse
 
 Controls:
 WASD - move
@@ -23,3 +23,5 @@ James Sha
 cs184-bp
 Johnny Shen
 cs184-ep
+
+Code submitted by cs184-bp
